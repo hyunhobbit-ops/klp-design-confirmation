@@ -149,8 +149,10 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 
 <!-- ===== WR SUB TABS ===== -->
 <div class="sub-bar hidden" id="wrSubBar" style="background:#4a3520">
-  <button class="tab-btn active" id="wrTabForm" onclick="showWrTab('form')">📝 입력</button>
-  <button class="tab-btn" id="wrTabPreview" onclick="showWrTab('preview')">👁️ 미리보기</button>
+  <button class="tab-btn active" id="wrTabForm" onclick="showWrTab('form')">📝 입력/수정</button>
+  <button class="tab-btn" id="wrTabNew" onclick="newWrDoc()">🆕 새로 입력</button>
+  <button class="tab-btn" id="wrTabHistory" onclick="showWrTab('history')">📋 히스토리</button>
+</div>
 </div>
 
 <!-- ================================================================ -->
@@ -183,6 +185,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="section-title" style="margin-bottom:0;padding-bottom:0;border:none">📋 발행 히스토리</div>
       <button onclick="loadHistory()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--klp-border);background:#fff;cursor:pointer;font-size:12px;font-family:inherit">🔄 새로고침</button>
+      <button onclick="deleteSelected()" id="btnDeleteSelected" class="hidden" style="padding:6px 14px;border-radius:6px;border:1px solid var(--klp-red);background:var(--klp-red);color:#fff;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700">🗑️ 선택 삭제</button>
     </div>
     <input class="search-box" id="historySearch" placeholder="🔍 업체명, 품명, 문서번호로 검색..." oninput="filterHistory()">
   </div>
@@ -255,6 +258,18 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
   <div class="preview-wrap"><div id="wrDocEl"></div></div>
 </div>
 
+<!-- WR HISTORY -->
+<div id="wrHistory" class="history-wrap hidden">
+  <div class="section" style="margin-bottom:0;padding-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin-bottom:0;padding-bottom:0;border:none">📋 작업요청서 히스토리</div>
+      <button onclick="loadWrHistory()" style="padding:6px 14px;border-radius:6px;border:1px solid var(--klp-border);background:#fff;cursor:pointer;font-size:12px;font-family:inherit">🔄 새로고침</button>
+    </div>
+    <input class="search-box" id="wrHistorySearch" placeholder="🔍 업체명, 품명, 문서번호로 검색..." oninput="filterWrHistory()">
+  </div>
+  <div id="wrHistoryList"></div>
+</div>
+
 <!-- LINK MODAL -->
 <div id="linkModal" class="link-modal-bg hidden" style="display:none" onclick="closeLinkModal()">
   <div class="link-modal" onclick="event.stopPropagation()">
@@ -296,7 +311,7 @@ function switchMode(mode){
   document.getElementById('modeWR').className='mode-btn'+(mode==='wr'?' active-wr':'');
   document.getElementById('dcSubBar').classList.toggle('hidden',mode!=='dc');
   document.getElementById('wrSubBar').classList.toggle('hidden',mode!=='wr');
-  ['dcForm','dcPreview','dcHistory','wrForm','wrPreview'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
+  ['dcForm','dcPreview','dcHistory','wrForm','wrPreview','wrHistory'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
   if(mode==='dc') showDcTab('form');
   else showWrTab('form');
 }
@@ -316,10 +331,11 @@ function showDcTab(tab){
 /* === WR TABS === */
 function showWrTab(tab){
   if(tab==='preview'){if(!validateWr())return;buildWrDoc()}
-  ['wrForm','wrPreview'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
-  ['wrTabForm','wrTabPreview'].forEach(function(t){document.getElementById(t).classList.remove('active')});
-  var map={form:'wrForm',preview:'wrPreview'};
-  var tmap={form:'wrTabForm',preview:'wrTabPreview'};
+  if(tab==='history')loadHistory();
+  ['wrForm','wrPreview','wrHistory'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
+  ['wrTabForm','wrTabPreview','wrTabHistory','wrTabNew'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
+  var map={form:'wrForm',preview:'wrPreview',history:'wrHistory'};
+  var tmap={form:'wrTabForm',preview:'wrTabPreview',history:'wrTabHistory'};
   document.getElementById(map[tab]).classList.remove('hidden');
   document.getElementById(tmap[tab]).classList.add('active');
 }
@@ -503,7 +519,7 @@ function buildDoc(){
   var estHtml='';
   if(e&&e.grand>0){var rows=[['제품 금액',fmtN(e.prodT)]];if(e.hasPr)rows.push(['인쇄비',fmtN(e.prT)]);if(e.hasPk)rows.push(['포장비',fmtN(e.pkT)]);rows.push(['공급가액',fmtN(e.sup)]);if(e.vat>0)rows.push(['VAT',fmtN(e.vat)]);estHtml='<div style="margin:0 24px;padding:20px 0 16px;border-top:1px solid #e8e8e5"><div style="font-size:11px;font-weight:700;color:#1F85FF;letter-spacing:1.5px;margin-bottom:12px">견적 금액</div><table style="width:100%;border-collapse:collapse;font-size:12px">'+rows.map(function(r){return '<tr><td style="padding:5px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:5px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:10px;padding-top:12px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:14px;font-weight:900;color:#222327">합계 금액</span><span style="font-size:24px;font-weight:900;color:#1F85FF;font-variant-numeric:tabular-nums">'+fmtN(e.grand)+'</span></div></div>'}
   var payHtml=showPay?'<div style="text-align:center;padding:8px 0;font-size:10.5px;color:#c41e3a;font-weight:700">제품은 선입금 50% 확인 후 제작되며, 잔금 결제 확인 후 출고됩니다.</div>':'';
-  document.getElementById('docEl').innerHTML='<div style="width:794px;height:1123px;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;overflow:hidden;position:relative"><div style="padding:28px 32px 20px;height:100%;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div style="font-size:11px;color:#999;letter-spacing:3px;font-weight:500;margin-bottom:4px">DESIGN CONFIRMATION</div><div style="font-size:28px;font-weight:900;color:#222327;letter-spacing:2px">디자인확인서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:24px;margin-bottom:4px"><div style="font-size:10px;color:#aaa;margin-top:2px">NO. '+docNum+' | '+fmtDate(val('date'))+'</div></div></div><div style="height:3px;background:linear-gradient(90deg,#1F85FF,#CDE6F7);border-radius:2px;margin-bottom:20px;flex-shrink:0"></div><div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;flex-shrink:0"><div style="flex:1;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">업체명</div><div style="font-size:15px;font-weight:700;color:#222327">'+val('companyName')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">담당자</div><div style="font-size:13px;font-weight:700;color:#222327">'+val('contactPerson')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">본사 담당</div><div style="font-size:13px;font-weight:700;color:#1F85FF">'+val('manager')+'</div></div></div><div style="background:#F4F3EA;border-radius:6px;padding:8px 18px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:13px;font-weight:700;color:#333">'+val('title')+'</span></div><div style="background:#fafafa;border:1px solid #eee;border-radius:8px;margin-bottom:14px;min-height:160px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div><div style="display:flex;gap:0;margin-bottom:0;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;flex-shrink:0"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div></div>'+estHtml+payHtml+'<div style="flex:1"></div><div style="padding:12px 18px;background:#F4F3EA;border-radius:6px;font-size:9.5px;color:#999;line-height:1.7;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-shrink:0"><div><div>• 최종 승인 후 수정은 불가하며, 이후 발생되는 문제는 당사가 책임지지 않습니다.</div><div>• 제품에 따라 사이즈 및 색상은 약간의 오차가 있을 수 있습니다.</div></div><div style="text-align:center;min-width:90px"><div style="font-size:9px;color:#bbb;margin-bottom:3px">확인 서명</div><div style="border-bottom:1.5px solid #aaa;width:80px;height:24px"></div></div></div><div style="margin-top:10px;padding:10px 18px;background:#222327;border-radius:6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0"><img src="'+LOGO_WHITE+'" style="height:16px"><div style="color:rgba(255,255,255,.55);font-size:7.5px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div></div></div>';
+  document.getElementById('docEl').innerHTML='<div style="width:794px;min-height:1123px;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;overflow:hidden;position:relative"><div style="padding:28px 32px 20px;height:100%;display:flex;flex-direction:column"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div style="font-size:11px;color:#999;letter-spacing:3px;font-weight:500;margin-bottom:4px">DESIGN CONFIRMATION</div><div style="font-size:28px;font-weight:900;color:#222327;letter-spacing:2px">디자인확인서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:24px;margin-bottom:4px"><div style="font-size:10px;color:#aaa;margin-top:2px">NO. '+docNum+' | '+fmtDate(val('date'))+'</div></div></div><div style="height:3px;background:linear-gradient(90deg,#1F85FF,#CDE6F7);border-radius:2px;margin-bottom:20px;flex-shrink:0"></div><div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;flex-shrink:0"><div style="flex:1;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">업체명</div><div style="font-size:15px;font-weight:700;color:#222327">'+val('companyName')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">담당자</div><div style="font-size:13px;font-weight:700;color:#222327">'+val('contactPerson')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">본사 담당</div><div style="font-size:13px;font-weight:700;color:#1F85FF">'+val('manager')+'</div></div></div><div style="background:#F4F3EA;border-radius:6px;padding:8px 18px;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:13px;font-weight:700;color:#333">'+val('title')+'</span></div><div style="background:#fafafa;border:1px solid #eee;border-radius:8px;margin-bottom:14px;min-height:160px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div><div style="display:flex;gap:0;margin-bottom:0;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;flex-shrink:0"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div></div>'+estHtml+payHtml+'<div style="flex:1"></div><div style="padding:12px 18px;background:#F4F3EA;border-radius:6px;font-size:9.5px;color:#999;line-height:1.7;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-shrink:0"><div><div>• 최종 승인 후 수정은 불가하며, 이후 발생되는 문제는 당사가 책임지지 않습니다.</div><div>• 제품에 따라 사이즈 및 색상은 약간의 오차가 있을 수 있습니다.</div></div><div style="text-align:center;min-width:90px"><div style="font-size:9px;color:#bbb;margin-bottom:3px">확인 서명</div><div style="border-bottom:1.5px solid #aaa;width:80px;height:24px"></div></div></div><div style="margin-top:10px;padding:10px 18px;background:#222327;border-radius:6px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0"><img src="'+LOGO_WHITE+'" style="height:16px"><div style="color:rgba(255,255,255,.55);font-size:7.5px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div></div></div></div>';
 }
 
 /* === BUILD WR DOC (FIX #6: 마진 제거) === */
@@ -535,11 +551,11 @@ function buildWrDoc(){
 
   var shipHtml='<div style="margin:0 24px;padding:14px 0;border-top:1px solid #e8e8e5"><div style="font-size:11px;font-weight:700;color:#888;letter-spacing:1.5px;margin-bottom:10px">배송 정보</div><table style="width:100%;border-collapse:collapse;font-size:12px"><tr><td style="padding:5px 0;color:#555;font-weight:600;width:80px">수령인</td><td style="padding:5px 0;color:#222">'+esc(val('wrRecipient'))+'</td></tr><tr><td style="padding:5px 0;color:#555;font-weight:600">연락처</td><td style="padding:5px 0;color:#222">'+esc(val('wrPhone'))+'</td></tr><tr><td style="padding:5px 0;color:#555;font-weight:600">주소</td><td style="padding:5px 0;color:#222">'+esc(val('wrAddress'))+'</td></tr></table></div>';
 
-  document.getElementById('wrDocEl').innerHTML='<div style="width:794px;min-height:1123px;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;position:relative"><div style="padding:28px 32px 20px;display:flex;flex-direction:column;min-height:1123px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div style="font-size:11px;color:#E67E22;letter-spacing:3px;font-weight:700;margin-bottom:4px">WORK REQUEST</div><div style="font-size:28px;font-weight:900;color:#222327;letter-spacing:2px">작업요청서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:24px;margin-bottom:4px"><div style="font-size:10px;color:#aaa;margin-top:2px">NO. '+esc(val('wrDocNum'))+' | '+fmtDate(val('wrDate'))+'</div></div></div><div style="height:3px;background:linear-gradient(90deg,#E67E22,#FEF0E0);border-radius:2px;margin-bottom:20px"></div><div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden"><div style="flex:1;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">업체명</div><div style="font-size:15px;font-weight:700;color:#222327">'+esc(val('wrCompany'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">담당자</div><div style="font-size:13px;font-weight:700;color:#222327">'+esc(val('wrContact'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">요청자</div><div style="font-size:13px;font-weight:700;color:#E67E22">'+esc(val('wrRequester'))+'</div></div></div><div style="background:#F4F3EA;border-radius:6px;padding:8px 18px;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:13px;font-weight:700;color:#333">'+esc(val('wrTitle'))+'</span></div><div style="background:#fafafa;border:1px solid #eee;border-radius:8px;margin-bottom:14px;overflow:hidden">'+imgHtml+'</div><div style="display:flex;gap:0;margin-bottom:0;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return row(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return row(r[0],r[1])}).join('')+'</table></div></div>'+estHtml+shipHtml+'<div style="margin:0 24px;padding:14px 18px;background:#FFF5F0;border:2px solid #E67E22;border-radius:8px;text-align:center"><span style="font-size:13px;font-weight:900;color:#c41e3a">⚠️ 발송인은 꼭 케이엘피코리아 로 작성해서 발송해주세요</span></div><div style="flex:1"></div><div style="padding:12px 18px;background:#F4F3EA;border-radius:6px;font-size:9.5px;color:#999;line-height:1.7;display:flex;justify-content:space-between;align-items:center;gap:16px"><div><div>• 본 작업요청서는 내부 제작 지시 목적으로만 사용됩니다.</div><div>• 시안 이미지와 상이한 제작 시 반드시 사전 협의 바랍니다.</div></div><div style="text-align:center;min-width:90px"><div style="font-size:9px;color:#bbb;margin-bottom:3px">확인</div><div style="border-bottom:1.5px solid #aaa;width:80px;height:24px"></div></div></div><div style="margin-top:10px;padding:10px 18px;background:#222327;border-radius:6px;display:flex;align-items:center;justify-content:space-between"><img src="'+LOGO_WHITE+'" style="height:16px"><div style="color:rgba(255,255,255,.55);font-size:7.5px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div></div></div>';
+  document.getElementById('wrDocEl').innerHTML='<div style="width:794px;min-height:1123px;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;position:relative"><div style="padding:28px 32px 20px;display:flex;flex-direction:column;min-height:1123px"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px"><div><div style="font-size:11px;color:#E67E22;letter-spacing:3px;font-weight:700;margin-bottom:4px">WORK REQUEST</div><div style="font-size:28px;font-weight:900;color:#222327;letter-spacing:2px">작업요청서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:24px;margin-bottom:4px"><div style="font-size:10px;color:#aaa;margin-top:2px">NO. '+esc(val('wrDocNum'))+' | '+fmtDate(val('wrDate'))+'</div></div></div><div style="height:3px;background:linear-gradient(90deg,#E67E22,#FEF0E0);border-radius:2px;margin-bottom:20px"></div><div style="display:flex;gap:0;margin-bottom:16px;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden"><div style="flex:1;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">업체명</div><div style="font-size:15px;font-weight:700;color:#222327">'+esc(val('wrCompany'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">담당자</div><div style="font-size:13px;font-weight:700;color:#222327">'+esc(val('wrContact'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 150px;padding:12px 18px;background:#F4F3EA"><div style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:3px">요청자</div><div style="font-size:13px;font-weight:700;color:#E67E22">'+esc(val('wrRequester'))+'</div></div></div><div style="background:#F4F3EA;border-radius:6px;padding:8px 18px;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:13px;font-weight:700;color:#333">'+esc(val('wrTitle'))+'</span></div><div style="background:#fafafa;border:1px solid #eee;border-radius:8px;margin-bottom:14px;overflow:hidden">'+imgHtml+'</div><div style="display:flex;gap:0;margin-bottom:0;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return row(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return row(r[0],r[1])}).join('')+'</table></div></div>'+estHtml+shipHtml+'<div style="margin:0 24px;padding:14px 18px;background:#FFF5F0;border:2px solid #E67E22;border-radius:8px;text-align:center"><span style="font-size:13px;font-weight:900;color:#c41e3a">⚠️ 발송인은 꼭 케이엘피코리아 로 작성해서 발송해주세요</span></div><div style="flex:1"></div><div style="padding:12px 18px;background:#F4F3EA;border-radius:6px;font-size:9.5px;color:#999;line-height:1.7;display:flex;justify-content:space-between;align-items:center;gap:16px"><div><div>• 본 작업요청서는 내부 제작 지시 목적으로만 사용됩니다.</div><div>• 시안 이미지와 상이한 제작 시 반드시 사전 협의 바랍니다.</div></div><div style="text-align:center;min-width:90px"><div style="font-size:9px;color:#bbb;margin-bottom:3px">확인</div><div style="border-bottom:1.5px solid #aaa;width:80px;height:24px"></div></div></div><div style="margin-top:10px;padding:10px 18px;background:#222327;border-radius:6px;display:flex;align-items:center;justify-content:space-between"><img src="'+LOGO_WHITE+'" style="height:16px"><div style="color:rgba(255,255,255,.55);font-size:7.5px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div></div></div></div>';
 }
 
 /* === DOWNLOADS === */
-async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnPng'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,windowWidth:794,windowHeight:1123});var name=val('companyName')||'KLP';var ds=val('date');if(type==='png'){var a=document.createElement('a');a.download='디자인확인서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('디자인확인서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
+async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnPng'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,windowWidth:794});var name=val('companyName')||'KLP';var ds=val('date');if(type==='png'){var a=document.createElement('a');a.download='디자인확인서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('디자인확인서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
 
 async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrPng'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,windowWidth:794});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='png'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
 
@@ -585,11 +601,11 @@ async function saveWrToDb(){
   }catch(err){showMsg('❌ 저장 실패: '+err.message,true)}
 }
 
-async function getNextSeq(){try{var res=await sbFetch('confirmations?select=doc_number&order=created_at.desc&limit=1','GET');if(res&&res.length>0){var last=res[0].doc_number||'';var parts=last.split('_');if(parts.length===2)return parseInt(parts[1])+1}return 1}catch(e){return 1}}
+async function getNextSeqSafe(){try{var res=await sbFetch('confirmations?select=doc_number&order=created_at.desc&limit=1','GET');if(res&&res.length>0){var last=res[0].doc_number||'';var parts=last.split('_');if(parts.length===2)return parseInt(parts[1])+1}return 1}catch(e){return 1}}
 
 /* FIX #3: 새로 입력 = 모든 데이터 초기화 */
 async function newDoc(){
-  var nextSeq=await getNextSeq();
+  var nextSeq=await getNextSeqSafe();
   document.getElementById('docSeq').value=nextSeq;updateDocNum();
   document.getElementById('date').value=new Date().toISOString().split('T')[0];
   ['companyName','contactPerson','title','productName','quantity','unitPrice','printFee','packagingFee','deliveryDate'].forEach(function(id){document.getElementById(id).value=''});
@@ -638,13 +654,13 @@ function renderHistory(data){
     var ddayColor=dday==='D-DAY'?'var(--klp-red)':dday.startsWith('D+')?'#999':'var(--klp-blue)';
     var badge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F4FD;color:#1F85FF;margin-right:6px">확인서</span>';
 
-    html+='<div class="hc" onclick="loadRecord('+r.id+')"><div class="hc-body"><div class="hc-docno">'+badge+esc(r.doc_number||'')+'</div><div class="hc-title">'+esc(r.company_name||'')+' — '+esc(r.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(r.product_name||'')+'</span><span>💰 '+(r.total_amount?r.total_amount.toLocaleString()+'원':'')+'</span>'+(r.delivery_date?'<span style="color:'+ddayColor+';font-weight:700">📅 '+dday+'</span>':'')+'</div></div><div class="hc-img-placeholder"></div></div>';
+    html+='<div class="hc" style="position:relative"><input type="checkbox" id="chk_'+r.id+'" onclick="toggleCheck('+r.id+',event)" style="position:absolute;top:14px;left:14px;width:18px;height:18px;accent-color:var(--klp-red);cursor:pointer;z-index:2"><div style="padding-left:36px;cursor:pointer" onclick="loadRecord('+r.id+')"><div class="hc-body"><div class="hc-docno">'+badge+esc(r.doc_number||'')+'</div><div class="hc-title">'+esc(r.company_name||'')+' — '+esc(r.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(r.product_name||'')+'</span><span>💰 '+(r.total_amount?r.total_amount.toLocaleString()+'원':'')+'</span>'+(r.delivery_date?'<span style="color:'+ddayColor+';font-weight:700">📅 '+dday+'</span>':'')+'</div></div></div>';
 
     /* 해당 DC에 연결된 WR 찾기 */
     var linkedWrs=wrList.filter(function(w){return w.doc_number&&w.doc_number.startsWith(r.doc_number+'_')});
     linkedWrs.forEach(function(w){
       var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
-      html+='<div class="hc" onclick="loadRecord('+w.id+')" style="margin-left:30px;border-left:3px solid #E67E22"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div></div><div class="hc-img-placeholder"></div></div>';
+      html+='<div class="hc" onclick="loadRecord('+w.id+')" style="margin-left:30px;border-left:3px solid #E67E22"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div></div></div>';
     });
   });
 
@@ -653,7 +669,7 @@ function renderHistory(data){
     var parentDocNum=w.doc_number?w.doc_number.replace(/_\d+$/,''):'';
     if(!dcMap[parentDocNum]){
       var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
-      html+='<div class="hc" onclick="loadRecord('+w.id+')"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span></div></div><div class="hc-img-placeholder"></div></div>';
+      html+='<div class="hc" onclick="loadRecord('+w.id+')"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span></div></div></div>';
     }
   });
 
@@ -737,7 +753,93 @@ async function loadRecord(id){
 /* === INIT === */
 document.getElementById('date').value=new Date().toISOString().split('T')[0];
 document.getElementById('yearPrefix').textContent=Y+'_';
-(async function(){var n=await getNextSeq();document.getElementById('docSeq').value=n;updateDocNum()})();
+(async function(){var n=await getNextSeqSafe();document.getElementById('docSeq').value=n;updateDocNum()})();
 </script>
+
+/* === NEW WR DOC (FIX #2) === */
+function newWrDoc(){
+  linkedDC=null;wrMainImg=null;wrSubImgs=[];
+  document.getElementById('wrDocNum').value='';
+  document.getElementById('wrDate').value=new Date().toISOString().split('T')[0];
+  ['wrCompany','wrContact','wrTitle','wrProduct','wrQty','wrUnitPrice','wrPrintFee','wrPkgFee','wrRecipient','wrPhone','wrAddress'].forEach(function(id){document.getElementById(id).value=''});
+  document.getElementById('wrColor').value='-';document.getElementById('wrPrintColorSize').value='시안 확인';
+  document.getElementById('wrUnit').value='개';document.getElementById('wrUnitPriceVat').value='VAT 별도';
+  document.getElementById('wrPrintMethod').value='없음';toggleWrPrintFee();
+  document.getElementById('wrPackaging').value='개별박스';document.getElementById('wrDeliveryDate').value='';
+  document.getElementById('wrRequester').value='김현호 팀장';
+  renderWrMainThumb();renderWrSubThumbs();
+  document.getElementById('wrEstCard').classList.add('hidden');
+  document.getElementById('wrMarginCard').classList.add('hidden');
+  document.getElementById('wrUnitPriceMargin').classList.add('hidden');
+  document.getElementById('wrPrintFeeMargin').classList.add('hidden');
+  document.getElementById('wrPkgFeeMargin').classList.add('hidden');
+  document.getElementById('wrLinkedInfo').classList.add('hidden');
+  showWrTab('form');
+}
+
+/* === WR HISTORY (same DB, filter by status) === */
+var wrHistoryData=[];
+async function loadWrHistory(){
+  var list=document.getElementById('wrHistoryList');
+  list.innerHTML='<div class="history-empty">불러오는 중...</div>';
+  try{var res=await sbFetch('confirmations?order=created_at.desc&limit=100','GET');wrHistoryData=res||[];renderWrHistory(wrHistoryData)}catch(err){list.innerHTML='<div class="history-empty">불러오기 실패</div>'}
+}
+function filterWrHistory(){var q=document.getElementById('wrHistorySearch').value.toLowerCase();if(!q){renderWrHistory(wrHistoryData);return}renderWrHistory(wrHistoryData.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)}))}
+function renderWrHistory(data){
+  var list=document.getElementById('wrHistoryList');
+  var wrOnly=(data||[]).filter(function(r){return r.status==='작업요청서'});
+  if(wrOnly.length===0){list.innerHTML='<div class="history-empty">저장된 작업요청서가 없습니다</div>';return}
+  list.innerHTML=wrOnly.map(function(r){
+    return '<div class="hc" onclick="loadRecord('+r.id+')"><div class="hc-body"><div class="hc-docno"><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>'+esc(r.doc_number||'')+'</div><div class="hc-title">'+esc(r.company_name||'')+' — '+esc(r.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(r.product_name||'')+'</span><span>💰 '+(r.total_amount?r.total_amount.toLocaleString()+'원':'')+'</span></div></div></div>';
+  }).join('');
+}
+
+/* === DELETE (FIX #5) === */
+var selectedIds=[];
+function toggleSelectMode(){
+  var btn=document.getElementById('btnDeleteSelected');
+  btn.classList.toggle('hidden');
+  selectedIds=[];
+  loadHistory();
+}
+function toggleCheck(id,el){
+  el.stopPropagation();
+  var idx=selectedIds.indexOf(id);
+  if(idx===-1)selectedIds.push(id);else selectedIds.splice(idx,1);
+  var btn=document.getElementById('btnDeleteSelected');
+  btn.classList.toggle('hidden',selectedIds.length===0);
+  /* visual */
+  var chk=document.getElementById('chk_'+id);
+  if(chk)chk.checked=selectedIds.indexOf(id)!==-1;
+}
+async function deleteSelected(){
+  if(selectedIds.length===0)return;
+  if(!confirm(selectedIds.length+'개 항목을 삭제하시겠습니까?\n삭제하면 복구할 수 없습니다.'))return;
+  var failed=0;
+  for(var i=0;i<selectedIds.length;i++){
+    try{await sbFetch('confirmations?id=eq.'+selectedIds[i],'DELETE')}catch(e){failed++}
+  }
+  selectedIds=[];
+  document.getElementById('btnDeleteSelected').classList.add('hidden');
+  if(failed>0)showMsg('⚠️ '+failed+'개 항목 삭제 실패',true);
+  else showMsg('🗑️ 삭제 완료!');
+  loadHistory();
+}
+
+/* === FIX #3: 중복 문서번호 방지 === */
+async function getNextSeqSafe(){
+  try{
+    var res=await sbFetch('confirmations?select=doc_number&order=created_at.desc&limit=200','GET');
+    if(!res||res.length===0)return 1;
+    var maxSeq=0;
+    res.forEach(function(r){
+      var dn=r.doc_number||'';
+      var parts=dn.split('_');
+      /* DC: 2026_0001, WR: 2026_0001_1 */
+      if(parts.length>=2){var s=parseInt(parts[1]);if(s>maxSeq)maxSeq=s}
+    });
+    return maxSeq+1;
+  }catch(e){return 1}
+}
 </body>
 </html>
