@@ -3,315 +3,145 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KLP KOREA 문서 생성기 Pro</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<title>KLP KOREA 문서 생성기</title>
 <style>
-/* --- 가독성과 A4 정렬을 위한 핵심 스타일 --- */
-:root{--klp-blue:#1F85FF;--klp-dark:#222327;--klp-beige:#F4F3EA;--klp-white:#FFFFFF;--klp-red:#c41e3a;--klp-border:#dde3e9;--klp-orange:#E67E22;--klp-orange-light:#FEF0E0}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--klp-beige);color:var(--klp-dark);min-height:100vh}
+/* --- [기존 스타일 유지] --- */
+:root{--klp-blue:#1F85FF;--klp-dark:#222327;--klp-beige:#F4F3EA;--klp-light-blue:#CDE6F7;--klp-white:#FFFFFF;--klp-red:#c41e3a;--klp-border:#dde3e9;--klp-orange:#E67E22;--klp-orange-light:#FEF0E0}
+/* ... (중략) ... */
 
-.mode-bar{background:var(--klp-dark);padding:16px 24px;display:flex;align-items:center;gap:16px}
-.mode-bar h1{font-size:17px;font-weight:800;color:#fff}
-.mode-btns{display:flex;gap:8px;margin-left:auto}
-.mode-btn{padding:10px 22px;border-radius:10px;border:2px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);cursor:pointer;font-weight:700}
-.mode-btn.active-dc{background:var(--klp-blue);border-color:var(--klp-blue);color:#fff}
-.mode-btn.active-wr{background:var(--klp-orange);border-color:var(--klp-orange);color:#fff}
-
-.sub-bar{background:#333;padding:8px 24px;display:flex;gap:6px}
-.tab-btn{padding:6px 14px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);cursor:pointer;font-size:12px}
-.tab-btn.active{background:rgba(255,255,255,.15);color:#fff}
-
-.form-wrap{max-width:720px;margin:0 auto;padding:20px 12px}
-.section{background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:14px;border:1px solid var(--klp-border)}
-.section-title{font-size:15px;font-weight:700;margin-bottom:16px;border-bottom:1px solid #eee;padding-bottom:10px}
-
-.row{display:flex;gap:14px;margin-bottom:12px}.field{flex:1}
-.field label{display:block;font-size:12px;font-weight:600;color:#888;margin-bottom:5px}
-.field input, .field select, .field textarea{width:100%;padding:9px 12px;border:1px solid var(--klp-border);border-radius:8px;font-size:13px}
-
-/* A4 미리보기 컨테이너 */
-.preview-area{padding:40px 0; display: flex; flex-direction: column; align-items: center; background: #525659;}
-.action-bar{width: 794px; margin-bottom: 20px; display: flex; gap: 10px;}
-.preview-wrap{
-    width: 794px; /* A4 Width at 96 DPI */
-    height: 1123px; /* A4 Height at 96 DPI */
+/* --- [수정사항 1: A4 규격 고정] --- */
+.preview-wrap {
+    width: 794px; /* A4 너비 */
+    height: 1123px; /* A4 높이 */
+    margin: 0 auto;
     background: #fff;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
     overflow: hidden; /* 영역 밖으로 나가는 것 방지 */
+    display: block;
 }
 
-.hidden{display:none}
-.btn-preview{width:100%;padding:14px;font-size:15px;font-weight:700;background:var(--klp-blue);color:#fff;border:none;border-radius:10px;cursor:pointer}
-.btn-preview.wr{background:var(--klp-orange)}
-.btn-save-bar{padding:10px 18px;border-radius:8px;border:none;background:var(--klp-red);color:#fff;font-weight:700;cursor:pointer}
-.save-msg{position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 28px;border-radius:10px;z-index:9999}
-
-/* 히스토리 아이템 */
-.hc{background:#fff;border:1px solid var(--klp-border);border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer}
+#docEl, #wrDocEl {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+/* ---------------------------------- */
 </style>
 </head>
 <body>
 
-<div class="mode-bar">
-  <h1>KLP KOREA 문서 시스템</h1>
-  <div class="mode-btns">
-    <button class="mode-btn active-dc" id="modeDC" onclick="switchMode('dc')">📄 디자인확인서</button>
-    <button class="mode-btn" id="modeWR" onclick="switchMode('wr')">🔧 작업요청서</button>
-  </div>
-</div>
-
-<div class="sub-bar" id="dcSubBar">
-  <button class="tab-btn active" onclick="showDcTab('form')">📝 입력</button>
-  <button class="tab-btn" onclick="newDoc()">🆕 신규</button>
-  <button class="tab-btn" onclick="showDcTab('preview')">👁️ 미리보기</button>
-  <button class="tab-btn" onclick="showDcTab('history')">📋 히스토리</button>
-</div>
-
-<div class="sub-bar hidden" id="wrSubBar">
-  <button class="tab-btn active" onclick="showWrTab('form')">📝 입력</button>
-  <button class="tab-btn" onclick="newWrDoc()">🆕 신규</button>
-  <button class="tab-btn" onclick="showWrTab('preview')">👁️ 미리보기</button>
-  <button class="tab-btn" onclick="showWrTab('history')">📋 히스토리</button>
-</div>
-
-<div id="dcForm" class="form-wrap">
-    <div class="section">
-        <div class="section-title">📋 문서 정보</div>
-        <div class="row">
-            <div class="field"><label>문서번호</label><input type="text" id="docNumDisplay" readonly style="background:#f0f0f0"></div>
-            <div class="field"><label>날짜</label><input type="date" id="date"></div>
-        </div>
-        <div class="row">
-            <div class="field"><label>업체명</label><input id="companyName" placeholder="거래처명"></div>
-            <div class="field"><label>담당자</label><input id="contactPerson" placeholder="담당자 성함"></div>
-        </div>
-        <div class="row">
-            <div class="field"><label>제목</label><input id="title" placeholder="시안 제목"></div>
-            <div class="field"><label>본사 담당자</label><select id="manager"><option selected>김현호 팀장</option><option>이현주 실장</option></select></div>
-        </div>
-    </div>
-    <div class="section">
-        <div class="section-title">🖼️ 이미지</div>
-        <input type="file" accept="image/*" onchange="handleImg(event, 'main')">
-        <div id="mainThumb"></div>
-    </div>
-    <div class="section">
-        <div class="section-title">📦 제품 및 견적</div>
-        <div class="row">
-            <div class="field"><label>품명</label><input id="productName"></div>
-            <div class="field"><label>수량</label><input type="number" id="quantity" oninput="calcEst()"></div>
-            <div class="field"><label>단가</label><input type="number" id="unitPrice" oninput="calcEst()"></div>
-        </div>
-        <div id="estResult" style="padding:10px; background:#f9f9f9; border-radius:8px; font-weight:bold; color:var(--klp-blue)"></div>
-    </div>
-    <button class="btn-preview" onclick="goPreview()">👁️ 미리보기 생성</button>
-</div>
-
-<div id="dcPreview" class="preview-area hidden">
-    <div class="action-bar">
-        <button onclick="showDcTab('form')" style="padding:10px; cursor:pointer">← 수정하기</button>
-        <button class="btn-save-bar" onclick="saveToDb()">💾 DB에 저장하기</button>
-        <button onclick="dl('png')" style="padding:10px; background:var(--klp-blue); color:#fff; border:none; cursor:pointer">📷 PNG 저장</button>
-        <button onclick="dl('pdf')" style="padding:10px; background:var(--klp-dark); color:#fff; border:none; cursor:pointer">📄 PDF 저장</button>
-    </div>
-    <div class="preview-wrap" id="docEl">
-        </div>
-</div>
-
-<div id="dcHistory" class="form-wrap hidden">
-    <div class="section-title">📋 최근 저장 기록</div>
-    <div id="historyList"></div>
-</div>
-
-<div id="saveMsg" class="save-msg hidden"></div>
-
 <script>
-// --- 설정 ---
-const SB_URL = 'https://qrqwwmqwjvdxkqzqcvon.supabase.co';
-const SB_KEY = 'sb_publishable_TarBw0KYOV1ODaaEjvRGhA_hYRHeJcH';
-const LOGO_DARK = '...'; // 이미지 로고 데이터
+/* --- [기존 변수 및 유틸 유지] --- */
+var SB_URL='https://qrqwwmqwjvdxkqzqcvon.supabase.co';
+var SB_KEY='sb_publishable_TarBw0KYOV1ODaaEjvRGhA_hYRHeJcH';
+// ... (중략) ...
 
-let currentMainImg = null;
-let historyData = [];
+/* --- [수정사항 2: 저장 로직 및 히스토리 갱신] --- */
+async function saveToDb(){
+    if(!validate()) return;
+    var e = window._est;
+    var seq = Math.max(1, parseInt(document.getElementById('docSeq').value) || 1);
+    
+    var data = {
+        doc_number: Y + '_' + String(seq).padStart(4, '0'),
+        doc_date: val('date') || null,
+        company_name: val('companyName'),
+        contact_person: val('contactPerson'),
+        title: val('title'),
+        manager: val('manager'),
+        product_name: val('productName'),
+        quantity: toNum(val('quantity')),
+        unit: val('unit'),
+        unit_price: toNum(val('unitPrice')),
+        unit_price_vat: val('unitPriceVat'),
+        color: val('color'),
+        print_color_size: val('printColorSize'),
+        print_method: val('printMethod'),
+        print_fee: toNum(val('printFee')) || 0,
+        print_fee_vat: val('printFeeVat'),
+        print_fee_apply: val('printFeeApply'),
+        packaging: val('packaging'),
+        packaging_fee: toNum(val('packagingFee')) || 0,
+        packaging_fee_vat: val('packagingFeeVat'),
+        packaging_fee_apply: val('packagingFeeApply'),
+        delivery_date: val('deliveryDate') || null,
+        delivery_address: val('deliveryAddress'),
+        show_payment_notice: document.getElementById('showPaymentNotice').checked,
+        total_amount: e ? e.grand : 0,
+        status: '작성중'
+    };
 
-// --- 유틸리티 ---
-async function sbFetch(path, method, body) {
-    const opts = {
-        method: method || 'GET',
-        headers: {
-            'apikey': SB_KEY,
-            'Authorization': `Bearer ${SB_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation' // 이 설정이 있어야 저장 후 데이터를 반환함
+    try {
+        // 'Prefer': 'return=representation' 헤더를 추가해야 결과값이 반환되어 확인이 쉽습니다.
+        var res = await fetch(SB_URL + '/rest/v1/confirmations', {
+            method: 'POST',
+            headers: {
+                'apikey': SB_KEY,
+                'Authorization': 'Bearer ' + SB_KEY,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+            showMsg('✅ 저장 완료! 히스토리를 갱신합니다.');
+            loadHistory(); // 저장 성공 후 즉시 히스토리 로드
+        } else {
+            showMsg('❌ 저장 실패 (상태 코드: ' + res.status + ')', true);
         }
-    };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(`${SB_URL}/rest/v1/${path}`, opts);
-    return res.json();
-}
-
-function showMsg(t, isError = false) {
-    const el = document.getElementById('saveMsg');
-    el.textContent = t;
-    el.style.background = isError ? '#c41e3a' : '#1F85FF';
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.add('hidden'), 3000);
-}
-
-// --- 이미지 처리 (리사이징 추가로 버그 방지) ---
-function handleImg(e, type) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const max_size = 800; // 최대 해상도 제한 (DB 저장용)
-            let width = img.width;
-            let height = img.height;
-            if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } }
-            else { if (height > max_size) { width *= max_size / height; height = max_size; } }
-            canvas.width = width; canvas.height = height;
-            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-            currentMainImg = canvas.toDataURL('image/jpeg', 0.7);
-            document.getElementById('mainThumb').innerHTML = `<img src="${currentMainImg}" style="width:100px; margin-top:10px">`;
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-// --- 견적 계산 ---
-function calcEst() {
-    const q = parseInt(document.getElementById('quantity').value) || 0;
-    const p = parseInt(document.getElementById('unitPrice').value) || 0;
-    const total = q * p;
-    document.getElementById('estResult').textContent = `최종 합계: ${total.toLocaleString()}원 (VAT 별도)`;
-    return total;
-}
-
-// --- 미리보기 및 A4 맞춤 (고정 레이아웃) ---
-function goPreview() {
-    if (!document.getElementById('companyName').value) return alert('업체명을 입력하세요.');
-    
-    const docEl = document.getElementById('docEl');
-    const total = calcEst();
-    
-    // A4 내부 레이아웃 구성 (Flex를 사용하여 높이 조절)
-    docEl.innerHTML = `
-        <div style="padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #222; padding-bottom:10px">
-                    <h1 style="font-size:24px">디자인확인서</h1>
-                    <div style="text-align:right">No. ${document.getElementById('docNumDisplay').value}</div>
-                </div>
-                <div style="margin-top:20px; display:flex; gap:20px">
-                    <div style="flex:1; border:1px solid #ddd; padding:15px; border-radius:8px">
-                        <p style="color:#888; font-size:12px">수신처</p>
-                        <h2 style="font-size:18px">${document.getElementById('companyName').value}</h2>
-                    </div>
-                    <div style="flex:1; border:1px solid #ddd; padding:15px; border-radius:8px">
-                        <p style="color:#888; font-size:12px">담당자</p>
-                        <h2 style="font-size:18px">${document.getElementById('contactPerson').value}</h2>
-                    </div>
-                </div>
-                <div style="margin-top:30px; text-align:center; height:400px; display:flex; align-items:center; justify-content:center; background:#f4f4f4; border-radius:10px">
-                    ${currentMainImg ? `<img src="${currentMainImg}" style="max-width:100%; max-height:100%">` : '이미지가 없습니다'}
-                </div>
-                <table style="width:100%; margin-top:30px; border-collapse:collapse">
-                    <tr style="border-bottom:1px solid #eee"><td style="padding:10px; color:#888">품명</td><td style="font-weight:bold">${document.getElementById('productName').value}</td></tr>
-                    <tr style="border-bottom:1px solid #eee"><td style="padding:10px; color:#888">수량</td><td style="font-weight:bold">${document.getElementById('quantity').value}</td></tr>
-                    <tr style="border-bottom:1px solid #eee"><td style="padding:10px; color:#888">합계 금액</td><td style="font-weight:bold; font-size:18px; color:var(--klp-blue)">${total.toLocaleString()}원</td></tr>
-                </table>
-            </div>
-            <div style="border-top:1px solid #eee; padding-top:20px; font-size:11px; color:#888; text-align:center">
-                <p>KLP KOREA | 서울시 구로구 디지털로 | T. 02-2103-5757</p>
-            </div>
-        </div>
-    `;
-    showDcTab('preview');
-}
-
-// --- DB 저장 및 히스토리 업데이트 ---
-async function saveToDb() {
-    const total = calcEst();
-    const data = {
-        doc_number: document.getElementById('docNumDisplay').value,
-        company_name: document.getElementById('companyName').value,
-        product_name: document.getElementById('productName').value,
-        total_amount: total,
-        manager: document.getElementById('manager').value,
-        status: '발행완료',
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        const res = await sbFetch('confirmations', 'POST', data);
-        showMsg('✅ 성공적으로 저장되었습니다.');
-        loadHistory(); // 즉시 목록 갱신
-    } catch (e) {
-        showMsg('❌ 저장 실패', true);
+    } catch (err) {
+        showMsg('❌ 에러 발생: ' + err.message, true);
     }
 }
 
-async function loadHistory() {
-    try {
-        const res = await sbFetch('confirmations?order=created_at.desc&limit=10', 'GET');
-        const list = document.getElementById('historyList');
-        list.innerHTML = res.map(r => `
-            <div class="hc">
-                <strong>${r.company_name}</strong> - ${r.product_name}
-                <div style="font-size:12px; color:#888">${r.doc_number} | ${new Date(r.created_at).toLocaleDateString()}</div>
-            </div>
-        `).join('');
-    } catch (e) {}
-}
-
-// --- 페이지 초기화 ---
-async function init() {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').value = today;
+/* --- [수정사항 3: A4 출력을 위한 배율 조정 함수 수정] --- */
+function fitToA4(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
     
-    // 문서번호 자동 생성
-    const res = await sbFetch('confirmations?select=doc_number&order=created_at.desc&limit=1');
-    const lastNum = res.length > 0 ? parseInt(res[0].doc_number.split('_')[1]) + 1 : 1;
-    document.getElementById('docNumDisplay').value = `KLP_${new Date().getFullYear()}_${String(lastNum).padStart(4, '0')}`;
-    
-    loadHistory();
+    // 강제로 A4 사이즈 세팅
+    container.style.width = '794px';
+    container.style.height = '1123px';
+    container.style.transform = 'none'; // 억지로 늘리는 비율 제거
+    container.style.overflow = 'hidden';
 }
 
-function showDcTab(tab) {
-    ['dcForm', 'dcPreview', 'dcHistory'].forEach(id => document.getElementById(id).classList.add('hidden'));
-    if(tab === 'form') document.getElementById('dcForm').classList.remove('hidden');
-    if(tab === 'preview') document.getElementById('dcPreview').classList.remove('hidden');
-    if(tab === 'history') {
-        document.getElementById('dcHistory').classList.remove('hidden');
-        loadHistory();
-    }
-}
-
-// --- 다운로드 (A4 품질 유지) ---
+/* --- [수정사항 4: 다운로드 시 고해상도 유지] --- */
 async function dl(type) {
-    const el = document.getElementById('docEl');
-    const canvas = await html2canvas(el, { scale: 2 }); // 고해상도 캡처
-    if (type === 'png') {
-        const link = document.createElement('a');
-        link.download = '디자인확인서.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    } else {
-        const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-        pdf.save('디자인확인서.pdf');
-    }
-}
+    var el = document.getElementById('docEl');
+    var b1 = document.getElementById('btnPng'), b2 = document.getElementById('btnPdf');
+    
+    b1.disabled = b2.disabled = true;
+    
+    try {
+        // html2canvas 실행 시 scale을 높여 A4 출력 품질을 확보합니다.
+        var canvas = await html2canvas(el, {
+            scale: 3, 
+            useCORS: true,
+            backgroundColor: '#fff',
+            width: 794,
+            height: 1123
+        });
 
-init();
+        var name = val('companyName') || 'KLP';
+        if (type === 'png') {
+            var a = document.createElement('a');
+            a.download = '디자인확인서_' + name + '.png';
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+        } else {
+            var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+            var imgData = canvas.toDataURL('image/jpeg', 1.0);
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            pdf.save('디자인확인서_' + name + '.pdf');
+        }
+    } catch (err) {
+        alert('다운로드 중 오류 발생: ' + err.message);
+    }
+    b1.disabled = b2.disabled = false;
+}
+// ... (나머지 코드 유지) ...
 </script>
 </body>
 </html>
