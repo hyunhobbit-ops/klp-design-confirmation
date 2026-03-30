@@ -667,18 +667,33 @@ async function dl(type){var el=document.getElementById('docEl');var b1=document.
 
 async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrPng'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='png'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
 
-/* === SUPABASE - DC 저장 (FIX #10: 이미지 포함) === */
+/* === SUPABASE - DC 저장 (FIX #10: 이미지, FIX #11: 문서번호 기준 덮어쓰기) === */
 async function saveToDb(){if(!validate())return;var e=window._est;var seq=Math.max(1,parseInt(document.getElementById('docSeq').value)||1);
   var imgData=await packImages(mainImg,subImgs,400,400);
-  var data={doc_number:Y+'_'+String(seq).padStart(4,'0'),doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('deliveryAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중',images_data:imgData};try{var res=await sbFetch('confirmations','POST',data);if(res&&res.length>0){showMsg('✅ 저장 완료! ('+data.doc_number+')')}else{showMsg('✅ 저장 완료!')}}catch(err){showMsg('❌ 저장 실패: '+err.message,true)}}
+  var docNum=Y+'_'+String(seq).padStart(4,'0');
+  var data={doc_number:docNum,doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('deliveryAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중',images_data:imgData};
+  try{
+    /* 같은 문서번호 존재 여부 확인 */
+    var existing=await sbFetch('confirmations?doc_number=eq.'+encodeURIComponent(docNum)+'&select=id','GET');
+    if(existing&&existing.length>0){
+      /* 덮어쓰기 (UPDATE) */
+      await sbFetch('confirmations?id=eq.'+existing[0].id,'PATCH',data);
+      showMsg('✅ 업데이트 완료! ('+docNum+')');
+    }else{
+      /* 신규 저장 (INSERT) */
+      await sbFetch('confirmations','POST',data);
+      showMsg('✅ 저장 완료! ('+docNum+')');
+    }
+  }catch(err){showMsg('❌ 저장 실패: '+err.message,true)}}
 
-/* === SUPABASE - WR 저장 (FIX #7, #10: 이미지 포함) === */
+/* === SUPABASE - WR 저장 (FIX #7, #10, #11: 문서번호 기준 덮어쓰기) === */
 async function saveWrToDb(){
   if(!validateWr())return;
   var we=window._wrEst;
   var imgData=await packImages(wrMainImg,wrSubImgs,400,400);
+  var docNum=val('wrDocNum');
   var data={
-    doc_number:val('wrDocNum'),
+    doc_number:docNum,
     doc_date:val('wrDate')||null,
     company_name:val('wrCompany'),
     contact_person:val('wrContact'),
@@ -707,9 +722,14 @@ async function saveWrToDb(){
     images_data:imgData
   };
   try{
-    var res=await sbFetch('confirmations','POST',data);
-    if(res&&res.length>0){showMsg('✅ 작업요청서 저장 완료! ('+data.doc_number+')')}
-    else{showMsg('✅ 작업요청서 저장 완료!')}
+    var existing=await sbFetch('confirmations?doc_number=eq.'+encodeURIComponent(docNum)+'&select=id','GET');
+    if(existing&&existing.length>0){
+      await sbFetch('confirmations?id=eq.'+existing[0].id,'PATCH',data);
+      showMsg('✅ 작업요청서 업데이트 완료! ('+docNum+')');
+    }else{
+      await sbFetch('confirmations','POST',data);
+      showMsg('✅ 작업요청서 저장 완료! ('+docNum+')');
+    }
   }catch(err){showMsg('❌ 저장 실패: '+err.message,true)}
 }
 
