@@ -303,6 +303,36 @@ function updateDocNum(){var s=Math.max(1,parseInt(document.getElementById('docSe
 function showMsg(t,e){var el=document.getElementById('saveMsg');el.textContent=t;el.style.background=e?'#c41e3a':'#1F85FF';el.style.color='#fff';el.classList.remove('hidden');setTimeout(function(){el.classList.add('hidden')},3000)}
 async function sbFetch(path,method,body){var opts={method:method||'GET',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'}};if(body)opts.body=JSON.stringify(body);var res=await fetch(SB_URL+'/rest/v1/'+path,opts);return res.json()}
 
+/* === 이미지 리사이즈 → 압축 Base64 (FIX #10) === */
+function resizeImgToBase64(dataUrl,maxW,maxH,quality){
+  return new Promise(function(resolve){
+    if(!dataUrl){resolve(null);return}
+    var img=new Image();
+    img.onload=function(){
+      var w=img.width,h=img.height;
+      if(w>maxW||h>maxH){var ratio=Math.min(maxW/w,maxH/h);w=Math.round(w*ratio);h=Math.round(h*ratio)}
+      var c=document.createElement('canvas');c.width=w;c.height=h;
+      var ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',quality||0.6));
+    };
+    img.onerror=function(){resolve(null)};
+    img.src=dataUrl;
+  });
+}
+async function packImages(main,subs,maxW,maxH){
+  var result={main:null,subs:[]};
+  if(main&&main.url)result.main=await resizeImgToBase64(main.url,maxW||400,maxH||400,0.5);
+  for(var i=0;i<subs.length;i++){
+    var s=await resizeImgToBase64(subs[i].url,maxW||200,maxH||200,0.4);
+    if(s)result.subs.push(s);
+  }
+  return JSON.stringify(result);
+}
+function unpackImages(jsonStr){
+  try{var d=JSON.parse(jsonStr);return{main:d.main?{url:d.main}:null,subs:(d.subs||[]).map(function(s){return{url:s}})}}
+  catch(e){return{main:null,subs:[]}}
+}
+
 /* === MODE SWITCH === */
 var currentMode='dc';
 function switchMode(mode){
@@ -637,13 +667,16 @@ async function dl(type){var el=document.getElementById('docEl');var b1=document.
 
 async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrPng'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='png'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
 
-/* === SUPABASE - DC 저장 === */
-async function saveToDb(){if(!validate())return;var e=window._est;var seq=Math.max(1,parseInt(document.getElementById('docSeq').value)||1);var data={doc_number:Y+'_'+String(seq).padStart(4,'0'),doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('deliveryAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중'};try{var res=await sbFetch('confirmations','POST',data);if(res&&res.length>0){showMsg('✅ 저장 완료! ('+data.doc_number+')')}else{showMsg('✅ 저장 완료!')}}catch(err){showMsg('❌ 저장 실패: '+err.message,true)}}
+/* === SUPABASE - DC 저장 (FIX #10: 이미지 포함) === */
+async function saveToDb(){if(!validate())return;var e=window._est;var seq=Math.max(1,parseInt(document.getElementById('docSeq').value)||1);
+  var imgData=await packImages(mainImg,subImgs,400,400);
+  var data={doc_number:Y+'_'+String(seq).padStart(4,'0'),doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('deliveryAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중',images_data:imgData};try{var res=await sbFetch('confirmations','POST',data);if(res&&res.length>0){showMsg('✅ 저장 완료! ('+data.doc_number+')')}else{showMsg('✅ 저장 완료!')}}catch(err){showMsg('❌ 저장 실패: '+err.message,true)}}
 
-/* === SUPABASE - WR 저장 (FIX #7) === */
+/* === SUPABASE - WR 저장 (FIX #7, #10: 이미지 포함) === */
 async function saveWrToDb(){
   if(!validateWr())return;
   var we=window._wrEst;
+  var imgData=await packImages(wrMainImg,wrSubImgs,400,400);
   var data={
     doc_number:val('wrDocNum'),
     doc_date:val('wrDate')||null,
@@ -670,7 +703,8 @@ async function saveWrToDb(){
     delivery_address:val('wrRecipient')+' / '+val('wrPhone')+' / '+val('wrAddress'),
     show_payment_notice:true,
     total_amount:we?we.sup:0,
-    status:'작업요청서'
+    status:'작업요청서',
+    images_data:imgData
   };
   try{
     var res=await sbFetch('confirmations','POST',data);
@@ -793,6 +827,9 @@ async function loadRecord(id){
       document.getElementById('wrRecipient').value=addrParts[0]||'';
       document.getElementById('wrPhone').value=addrParts[1]||'';
       document.getElementById('wrAddress').value=addrParts[2]||addrParts.join(' ');
+      /* 이미지 복원 (FIX #10) */
+      if(r.images_data){var imgs=unpackImages(r.images_data);wrMainImg=imgs.main;wrSubImgs=imgs.subs}else{wrMainImg=null;wrSubImgs=[]}
+      renderWrMainThumb();renderWrSubThumbs();
       calcWrEst();
       showWrTab('form');
       showMsg('📄 작업요청서 불러오기 완료!');
@@ -823,6 +860,9 @@ async function loadRecord(id){
       document.getElementById('deliveryDate').value=r.delivery_date||'';
       document.getElementById('deliveryAddress').value=r.delivery_address||'확인 필요';
       document.getElementById('showPaymentNotice').checked=r.show_payment_notice!==false;togglePayPreview();
+      /* 이미지 복원 (FIX #10) */
+      if(r.images_data){var imgs=unpackImages(r.images_data);mainImg=imgs.main;subImgs=imgs.subs}else{mainImg=null;subImgs=[]}
+      renderMainThumb();renderSubThumbs();
       calcEst();
       showDcTab('form');
       showMsg('📄 디자인확인서 불러오기 완료!');
