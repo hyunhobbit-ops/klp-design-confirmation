@@ -331,13 +331,20 @@ function showDcTab(tab){
 /* === WR TABS === */
 function showWrTab(tab){
   if(tab==='preview'){if(!validateWr())return;buildWrDoc()}
-  if(tab==='history')loadWrHistory();
-  ['wrForm','wrPreview','wrHistory'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
+  if(tab==='history'){loadHistory();} /* DC와 동일한 히스토리 사용 */
+  ['wrForm','wrPreview'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
+  document.getElementById('dcHistory').classList.add('hidden'); /* 혹시 보이면 숨기기 */
   ['wrTabForm','wrTabPreview','wrTabHistory','wrTabNew'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
-  var map={form:'wrForm',preview:'wrPreview',history:'wrHistory'};
-  var tmap={form:'wrTabForm',preview:'wrTabPreview',history:'wrTabHistory'};
-  document.getElementById(map[tab]).classList.remove('hidden');
-  document.getElementById(tmap[tab]).classList.add('active');
+  if(tab==='history'){
+    /* DC 히스토리 화면을 그대로 보여줌 */
+    document.getElementById('dcHistory').classList.remove('hidden');
+    document.getElementById('wrTabHistory').classList.add('active');
+  } else {
+    var map={form:'wrForm',preview:'wrPreview'};
+    var tmap={form:'wrTabForm',preview:'wrTabPreview'};
+    document.getElementById(map[tab]).classList.remove('hidden');
+    document.getElementById(tmap[tab]).classList.add('active');
+  }
 }
 
 /* === DC IMAGE HANDLERS === */
@@ -460,7 +467,7 @@ async function openLinkModal(){
   document.getElementById('linkModal').classList.remove('hidden');
   document.getElementById('linkModal').style.display='flex';
   document.getElementById('linkList').innerHTML='<div class="history-empty">불러오는 중...</div>';
-  try{var res=await sbFetch('confirmations?order=created_at.desc&limit=100','GET');linkData=res||[];renderLinkList(linkData)}catch(e){document.getElementById('linkList').innerHTML='<div class="history-empty">불러오기 실패</div>'}
+  try{var res=await sbFetch('confirmations?order=created_at.desc&limit=100','GET');linkData=(res||[]).filter(function(r){return r.status!=='작업요청서'});renderLinkList(linkData)}catch(e){document.getElementById('linkList').innerHTML='<div class="history-empty">불러오기 실패</div>'}
 }
 function closeLinkModal(){document.getElementById('linkModal').classList.add('hidden');document.getElementById('linkModal').style.display='none'}
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLinkModal()});
@@ -626,6 +633,8 @@ async function newDoc(){
 function getDday(dateStr){if(!dateStr)return'';var today=new Date();today.setHours(0,0,0,0);var target=new Date(dateStr);target.setHours(0,0,0,0);var diff=Math.ceil((target-today)/(1000*60*60*24));if(diff===0)return'D-DAY';if(diff>0)return'D-'+diff;return'D+'+Math.abs(diff)}
 
 async function loadHistory(){
+  selectedIds=[];
+  var btn=document.getElementById('btnDeleteSelected');if(btn)btn.classList.add('hidden');
   var list=document.getElementById('historyList');
   list.innerHTML='<div class="history-empty">불러오는 중...</div>';
   try{
@@ -747,7 +756,7 @@ async function loadRecord(id){
       document.getElementById('showPaymentNotice').checked=r.show_payment_notice!==false;togglePayPreview();
       calcEst();
       showDcTab('form');
-      showMsg('📄 디자인확인서 불러오기 완료! (이미지는 다시 첨부해주세요)');
+      showMsg('📄 디자인확인서 불러오기 완료!');
     }
   }catch(err){showMsg('❌ 불러오기 실패',true)}
 }
@@ -758,6 +767,8 @@ function fitToA4(containerId){
   var container=document.getElementById(containerId);
   var inner=container.firstElementChild;
   if(!inner)return;
+  /* 가운데 정렬 */
+  container.style.margin='0 auto';
   /* 먼저 scale 초기화 */
   inner.style.transform='none';
   inner.style.transformOrigin='top left';
@@ -770,7 +781,6 @@ function fitToA4(containerId){
     var scale=A4H/realH;
     inner.style.transform='scale('+scale+')';
     inner.style.transformOrigin='top left';
-    /* 컨테이너를 A4 크기로 고정 */
     container.style.width=A4W+'px';
     container.style.height=A4H+'px';
     container.style.overflow='hidden';
