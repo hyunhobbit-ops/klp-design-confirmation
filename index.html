@@ -769,42 +769,94 @@ async function loadHistory(){
 
 function filterHistory(){var q=document.getElementById('historySearch').value.toLowerCase();if(!q){renderHistory(historyData);return}renderHistory(historyData.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)}))}
 
-/* FIX #8: 히스토리에 DC/WR 세트로 표시 */
+/* FIX #12: 히스토리를 프로젝트 카드 묶음으로 리디자인 */
 function renderHistory(data){
   var list=document.getElementById('historyList');
   if(!data||data.length===0){list.innerHTML='<div class="history-empty">저장된 문서가 없습니다</div>';return}
 
   /* DC와 WR을 그룹핑 */
-  var dcMap={};var wrList=[];
+  var dcList=[];var wrMap={};
   data.forEach(function(r){
-    if(r.status==='작업요청서'){wrList.push(r)}
-    else{dcMap[r.doc_number]=r}
+    if(r.status==='작업요청서'){
+      /* 부모 DC 문서번호 추출: 2026_0001_1 → 2026_0001 */
+      var parentNum=r.doc_number?r.doc_number.replace(/_\d+$/,''):'';
+      if(!wrMap[parentNum])wrMap[parentNum]=[];
+      wrMap[parentNum].push(r);
+    }else{dcList.push(r)}
   });
 
   var html='';
-  data.forEach(function(r){
-    if(r.status==='작업요청서') return; /* WR은 DC 아래에 묶어서 표시 */
-    var dday=getDday(r.delivery_date);
-    var ddayColor=dday==='D-DAY'?'var(--klp-red)':dday.startsWith('D+')?'#999':'var(--klp-blue)';
-    var badge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F4FD;color:#1F85FF;margin-right:6px">확인서</span>';
+  dcList.forEach(function(dc){
+    var linkedWrs=wrMap[dc.doc_number]||[];
+    var dday=getDday(dc.delivery_date);
+    var ddayColor=dday==='D-DAY'?'#c41e3a':dday.startsWith('D+')?'#999':'#1F85FF';
 
-    html+='<div class="hc" style="display:flex;align-items:flex-start;gap:10px"><input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+r.id+',event)" style="margin-top:16px;width:18px;height:18px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer"><div style="flex:1;cursor:pointer" onclick="loadRecord('+r.id+')"><div class="hc-body"><div class="hc-docno">'+badge+esc(r.doc_number||'')+'</div><div class="hc-title">'+esc(r.company_name||'')+' — '+esc(r.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(r.product_name||'')+'</span><span>💰 '+(r.total_amount?r.total_amount.toLocaleString()+'원':'')+'</span>'+(r.delivery_date?'<span style="color:'+ddayColor+';font-weight:700">📅 '+dday+'</span>':'')+'</div></div></div></div>';
+    /* 매출(DC total), 비용(WR total 합산), 마진 계산 */
+    var revenue=dc.total_amount||0;
+    var cost=0;
+    linkedWrs.forEach(function(w){cost+=(w.total_amount||0)});
+    var margin=revenue-cost;
+    var hasWr=linkedWrs.length>0;
 
-    /* 해당 DC에 연결된 WR 찾기 */
-    var linkedWrs=wrList.filter(function(w){return w.doc_number&&w.doc_number.startsWith(r.doc_number+'_')});
+    /* === 프로젝트 카드 시작 === */
+    html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
+
+    /* 카드 헤더 */
+    html+='<div style="padding:14px 18px;background:#fafaf8;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="font-size:15px;font-weight:800;color:#222;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(dc.company_name||'')+' — '+esc(dc.product_name||'')+'</div>';
+    html+='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px">';
+    html+='<span style="color:#1F85FF;font-weight:600">매출 : '+fmtN(revenue)+'</span>';
+    if(hasWr){
+      html+='<span style="color:#E67E22;font-weight:600">비용 : '+fmtN(cost)+'</span>';
+      html+='<span style="font-weight:800;color:'+(margin>=0?'#2ECC71':'#c41e3a')+'">마진 : '+(margin>=0?'+':'')+fmtN(margin)+'</span>';
+    }else{
+      html+='<span style="color:#aaa;font-size:11px">작업요청서 미연동</span>';
+    }
+    html+='</div></div>';
+    if(dday){html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:#999;margin-bottom:2px">납기일</div><div style="font-size:16px;font-weight:900;color:'+ddayColor+'">'+dday+'</div></div>'}
+    html+='</div>';
+
+    /* DC 서브카드 */
+    var dcBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F4FD;color:#1F85FF;margin-right:6px">확인서</span>';
+    html+='<div style="padding:10px 18px;display:flex;align-items:center;gap:10px;border-bottom:'+(hasWr?'1px solid #f0f0f0':'none')+';cursor:pointer" onclick="loadRecord('+dc.id+')">';
+    html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+dc.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+dcBadge+esc(dc.doc_number||'')+'</div>';
+    html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(dc.company_name||'')+' — '+esc(dc.title||'')+'</div>';
+    html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(dc.product_name||'')+'</span><span>💰 '+(revenue?revenue.toLocaleString()+'원':'')+'</span></div>';
+    html+='</div></div>';
+
+    /* WR 서브카드들 */
     linkedWrs.forEach(function(w){
       var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
-      html+='<div class="hc" style="margin-left:30px;border-left:3px solid #E67E22;display:flex;align-items:flex-start;gap:10px"><input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+w.id+',event)" style="margin-top:16px;width:18px;height:18px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer"><div style="flex:1;cursor:pointer" onclick="loadRecord('+w.id+')"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div></div></div></div>';
+      html+='<div style="padding:10px 18px 10px 36px;display:flex;align-items:center;gap:10px;border-left:3px solid #E67E22;margin-left:18px;cursor:pointer" onclick="loadRecord('+w.id+')">';
+      html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+w.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
+      html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+wrBadge+esc(w.doc_number||'')+'</div>';
+      html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div>';
+      html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div>';
+      html+='</div></div>';
     });
+
+    html+='</div>'; /* 프로젝트 카드 끝 */
   });
 
-  /* DC에 연결 안 된 WR도 표시 */
-  wrList.forEach(function(w){
-    var parentDocNum=w.doc_number?w.doc_number.replace(/_\d+$/,''):'';
-    if(!dcMap[parentDocNum]){
+  /* DC에 연결 안 된 독립 WR도 표시 */
+  var dcNums={};dcList.forEach(function(dc){dcNums[dc.doc_number]=true});
+  Object.keys(wrMap).forEach(function(parentNum){
+    if(dcNums[parentNum])return; /* 이미 위에서 처리됨 */
+    var wrs=wrMap[parentNum];
+    html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
+    html+='<div style="padding:14px 18px;background:#FFF5F0;border-bottom:1px solid #f0d0b0"><div style="font-size:14px;font-weight:800;color:#E67E22">독립 작업요청서</div></div>';
+    wrs.forEach(function(w){
       var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
-      html+='<div class="hc" onclick="loadRecord('+w.id+')"><div class="hc-body"><div class="hc-docno">'+wrBadge+esc(w.doc_number||'')+'</div><div class="hc-title">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div><div class="hc-sub"><span>📦 '+esc(w.product_name||'')+'</span></div></div></div></div>';
-    }
+      html+='<div style="padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="loadRecord('+w.id+')">';
+      html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+w.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
+      html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+wrBadge+esc(w.doc_number||'')+'</div>';
+      html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div>';
+      html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div>';
+      html+='</div></div>';
+    });
+    html+='</div>';
   });
 
   list.innerHTML=html||'<div class="history-empty">저장된 문서가 없습니다</div>';
