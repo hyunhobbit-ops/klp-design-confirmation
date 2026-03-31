@@ -141,17 +141,13 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 
 <!-- ===== DC SUB TABS ===== -->
 <div class="sub-bar" id="dcSubBar">
-  <button class="tab-btn active" id="dcTabForm" onclick="showDcTab('form')">📝 입력/수정</button>
-  <button class="tab-btn" id="dcTabNew" onclick="newDoc()">🆕 새로 입력</button>
-  <button class="tab-btn" id="dcTabPreview" onclick="showDcTab('preview')">👁️ 미리보기</button>
+  <button class="tab-btn active" id="dcTabForm" onclick="newDoc()">📝 새로 입력</button>
   <button class="tab-btn" id="dcTabHistory" onclick="showDcTab('history')">📋 히스토리</button>
 </div>
 
 <!-- ===== WR SUB TABS ===== -->
 <div class="sub-bar hidden" id="wrSubBar" style="background:#4a3520">
-  <button class="tab-btn active" id="wrTabForm" onclick="showWrTab('form')">📝 입력/수정</button>
-  <button class="tab-btn" id="wrTabNew" onclick="newWrDoc()">🆕 새로 입력</button>
-  <button class="tab-btn" id="wrTabPreview" onclick="showWrTab('preview')">👁️ 미리보기</button>
+  <button class="tab-btn active" id="wrTabForm" onclick="newWrDoc()">📝 새로 입력</button>
   <button class="tab-btn" id="wrTabHistory" onclick="showWrTab('history')">📋 히스토리</button>
 </div>
 
@@ -165,14 +161,14 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
   <div class="section"><div class="section-title">🚚 납기 및 배송</div><div class="row"><div class="field"><label>납기일 <span class="req">*</span></label><input type="date" id="deliveryDate"></div><div class="field"><label>직송주소</label><input id="deliveryAddress" value="확인 필요" placeholder="배송지 주소"></div></div></div>
   <div class="section"><div class="section-title">💬 결제 조건 안내 문구</div><div class="toggle-wrap"><label class="toggle-switch"><input type="checkbox" id="showPaymentNotice" checked onchange="togglePayPreview()"><span class="toggle-slider"></span></label><span class="toggle-label">확인서에 결제 조건 문구 표시</span></div><div id="payPreview" class="toggle-preview">제품은 선입금 50% 확인 후 제작되며, 잔금 결제 확인 후 출고됩니다.</div></div>
   <div class="warn hidden" id="warnBox"></div>
-  <button class="btn-preview" onclick="goPreview()">👁️ 미리보기 →</button>
+  <button class="btn-preview" onclick="saveAndPreview()">💾 저장 & 미리보기 →</button>
 </div>
 
 <!-- DC PREVIEW -->
 <div id="dcPreview" class="preview-area hidden">
   <div class="action-bar">
     <button class="btn-back" onclick="showDcTab('form')">← 수정하기</button>
-    <button class="btn-save-bar" onclick="saveToDb()">⚠️ 저장 필수!</button>
+    <button class="btn-save-bar" onclick="saveToDb()" style="animation:none;border-color:var(--klp-blue);background:var(--klp-blue)">💾 다시 저장</button>
     <button class="btn-dl png" id="btnPng" onclick="dl('png')">📷 PNG</button>
     <button class="btn-dl pdf" id="btnPdf" onclick="dl('pdf')">📄 PDF</button>
   </div>
@@ -244,14 +240,14 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
   </div>
 
   <div class="warn hidden" id="wrWarnBox"></div>
-  <button class="btn-preview wr" onclick="goWrPreview()">👁️ 작업요청서 미리보기 →</button>
+  <button class="btn-preview wr" onclick="saveAndPreviewWr()">💾 저장 & 작업요청서 미리보기 →</button>
 </div>
 
 <!-- WR PREVIEW -->
 <div id="wrPreview" class="preview-area hidden">
   <div class="action-bar">
     <button class="btn-back" onclick="showWrTab('form')">← 수정하기</button>
-    <button class="btn-save-bar" onclick="saveWrToDb()">⚠️ 저장 필수!</button>
+    <button class="btn-save-bar" onclick="saveWrToDb()" style="animation:none;border-color:var(--klp-orange);background:var(--klp-orange)">💾 다시 저장</button>
     <button class="btn-dl wr-png" id="btnWrPng" onclick="dlWr('png')">📷 PNG</button>
     <button class="btn-dl wr-pdf" id="btnWrPdf" onclick="dlWr('pdf')">📄 PDF</button>
   </div>
@@ -359,29 +355,28 @@ function showDcTab(tab){
   if(tab==='preview'){if(!validate())return;buildDoc()}
   if(tab==='history')loadHistory();
   ['dcForm','dcPreview','dcHistory'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
-  ['dcTabForm','dcTabPreview','dcTabHistory','dcTabNew'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
+  ['dcTabForm','dcTabHistory'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
   var map={form:'dcForm',preview:'dcPreview',history:'dcHistory'};
-  var tmap={form:'dcTabForm',preview:'dcTabPreview',history:'dcTabHistory'};
+  var tmap={form:'dcTabForm',history:'dcTabHistory'};
   document.getElementById(map[tab]).classList.remove('hidden');
-  document.getElementById(tmap[tab]).classList.add('active');
+  if(tmap[tab]){document.getElementById(tmap[tab]).classList.add('active')}
 }
 
 /* === WR TABS === */
 function showWrTab(tab){
   if(tab==='preview'){if(!validateWr())return;buildWrDoc()}
-  if(tab==='history'){loadHistory();} /* DC와 동일한 히스토리 사용 */
+  if(tab==='history'){loadHistory();}
   ['wrForm','wrPreview'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
-  document.getElementById('dcHistory').classList.add('hidden'); /* 혹시 보이면 숨기기 */
-  ['wrTabForm','wrTabPreview','wrTabHistory','wrTabNew'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
+  document.getElementById('dcHistory').classList.add('hidden');
+  ['wrTabForm','wrTabHistory'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
   if(tab==='history'){
-    /* DC 히스토리 화면을 그대로 보여줌 */
     document.getElementById('dcHistory').classList.remove('hidden');
     document.getElementById('wrTabHistory').classList.add('active');
   } else {
     var map={form:'wrForm',preview:'wrPreview'};
-    var tmap={form:'wrTabForm',preview:'wrTabPreview'};
+    var tmap={form:'wrTabForm'};
     document.getElementById(map[tab]).classList.remove('hidden');
-    document.getElementById(tmap[tab]).classList.add('active');
+    if(tmap[tab]){document.getElementById(tmap[tab]).classList.add('active')}
   }
 }
 
@@ -497,8 +492,19 @@ function calcWrEst(){
 /* === VALIDATION === */
 function validate(){var req=[['companyName','업체명'],['contactPerson','담당자'],['title','제목'],['productName','품명'],['quantity','수량'],['unitPrice','단가'],['deliveryDate','납기']];var miss=req.filter(function(k){return !val(k[0])});var w=document.getElementById('warnBox');if(miss.length>0){w.innerHTML='⚠️ 필수 항목: <b>'+miss.map(function(m){return m[1]}).join(', ')+'</b>';w.classList.remove('hidden');return false}w.classList.add('hidden');return true}
 function validateWr(){var miss=[];if(!val('wrCompany'))miss.push('업체명');if(!val('wrContact'))miss.push('담당자');if(!val('wrUnitPrice'))miss.push('단가');if(!val('wrRecipient'))miss.push('수령인');if(!val('wrPhone'))miss.push('핸드폰번호');if(!val('wrAddress'))miss.push('주소');var w=document.getElementById('wrWarnBox');if(miss.length>0){w.innerHTML='⚠️ 필수 항목: <b>'+miss.join(', ')+'</b>';w.classList.remove('hidden');return false}w.classList.add('hidden');return true}
-function goPreview(){showDcTab('preview')}
-function goWrPreview(){showWrTab('preview')}
+/* #3: 저장 & 미리보기 */
+async function saveAndPreview(){
+  if(!validate())return;
+  calcEst();
+  await saveToDb();
+  showDcTab('preview');
+}
+async function saveAndPreviewWr(){
+  if(!validateWr())return;
+  calcWrEst();
+  await saveWrToDb();
+  showWrTab('preview');
+}
 
 /* === LINK MODAL (FIX #1: 작업요청서에서만 뜸) === */
 async function openLinkModal(){
@@ -777,7 +783,7 @@ async function loadHistory(){
 
 function filterHistory(){var q=document.getElementById('historySearch').value.toLowerCase();if(!q){renderHistory(historyData);return}renderHistory(historyData.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)}))}
 
-/* FIX #12: 히스토리를 프로젝트 카드 묶음으로 리디자인 */
+/* FIX #12,#14,#15: 히스토리 프로젝트 카드 - 라벨 풀네임, 서브카드 간소화 */
 function renderHistory(data){
   var list=document.getElementById('historyList');
   if(!data||data.length===0){list.innerHTML='<div class="history-empty">저장된 문서가 없습니다</div>';return}
@@ -786,7 +792,6 @@ function renderHistory(data){
   var dcList=[];var wrMap={};
   data.forEach(function(r){
     if(r.status==='작업요청서'){
-      /* 부모 DC 문서번호 추출: 2026_0001_1 → 2026_0001 */
       var parentNum=r.doc_number?r.doc_number.replace(/_\d+$/,''):'';
       if(!wrMap[parentNum])wrMap[parentNum]=[];
       wrMap[parentNum].push(r);
@@ -799,7 +804,6 @@ function renderHistory(data){
     var dday=getDday(dc.delivery_date);
     var ddayColor=dday==='D-DAY'?'#c41e3a':dday.startsWith('D+')?'#999':'#1F85FF';
 
-    /* 매출(DC total), 비용(WR total 합산), 마진 계산 */
     var revenue=dc.total_amount||0;
     var cost=0;
     linkedWrs.forEach(function(w){cost+=(w.total_amount||0)});
@@ -826,42 +830,39 @@ function renderHistory(data){
     html+='</div>';
 
     /* DC 서브카드 */
-    var dcBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F4FD;color:#1F85FF;margin-right:6px">확인서</span>';
+    var dcBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#E8F4FD;color:#1F85FF;margin-right:6px">디자인확인서</span>';
     html+='<div style="padding:10px 18px;display:flex;align-items:center;gap:10px;border-bottom:'+(hasWr?'1px solid #f0f0f0':'none')+';cursor:pointer" onclick="loadRecord('+dc.id+')">';
     html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+dc.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
     html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+dcBadge+esc(dc.doc_number||'')+'</div>';
     html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(dc.company_name||'')+' — '+esc(dc.title||'')+'</div>';
-    html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(dc.product_name||'')+'</span><span>💰 '+(revenue?revenue.toLocaleString()+'원':'')+'</span></div>';
     html+='</div></div>';
 
     /* WR 서브카드들 */
     linkedWrs.forEach(function(w){
-      var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
+      var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">작업요청서</span>';
       html+='<div style="padding:10px 18px 10px 36px;display:flex;align-items:center;gap:10px;border-left:3px solid #E67E22;margin-left:18px;cursor:pointer" onclick="loadRecord('+w.id+')">';
       html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+w.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
       html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+wrBadge+esc(w.doc_number||'')+'</div>';
       html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div>';
-      html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div>';
       html+='</div></div>';
     });
 
-    html+='</div>'; /* 프로젝트 카드 끝 */
+    html+='</div>';
   });
 
-  /* DC에 연결 안 된 독립 WR도 표시 */
+  /* DC에 연결 안 된 독립 WR */
   var dcNums={};dcList.forEach(function(dc){dcNums[dc.doc_number]=true});
   Object.keys(wrMap).forEach(function(parentNum){
-    if(dcNums[parentNum])return; /* 이미 위에서 처리됨 */
+    if(dcNums[parentNum])return;
     var wrs=wrMap[parentNum];
     html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
     html+='<div style="padding:14px 18px;background:#FFF5F0;border-bottom:1px solid #f0d0b0"><div style="font-size:14px;font-weight:800;color:#E67E22">독립 작업요청서</div></div>';
     wrs.forEach(function(w){
-      var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">요청서</span>';
+      var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">작업요청서</span>';
       html+='<div style="padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="loadRecord('+w.id+')">';
       html+='<input type="checkbox" onclick="event.stopPropagation();toggleHistoryCheck('+w.id+',event)" style="width:16px;height:16px;flex-shrink:0;accent-color:var(--klp-red);cursor:pointer">';
       html+='<div style="flex:1;min-width:0"><div style="font-size:11px;color:#aaa">'+wrBadge+esc(w.doc_number||'')+'</div>';
       html+='<div style="font-size:13px;font-weight:700;color:#333;margin-top:2px">'+esc(w.company_name||'')+' — '+esc(w.title||'')+'</div>';
-      html+='<div style="font-size:11px;color:#888;margin-top:3px;display:flex;gap:10px"><span>📦 '+esc(w.product_name||'')+'</span><span>💰 '+(w.total_amount?w.total_amount.toLocaleString()+'원':'')+'</span></div>';
       html+='</div></div>';
     });
     html+='</div>';
