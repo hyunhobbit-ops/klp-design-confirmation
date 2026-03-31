@@ -183,8 +183,17 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
       <button onclick="deleteSelected()" id="btnDeleteSelected" class="hidden" style="padding:6px 14px;border-radius:6px;border:1px solid var(--klp-red);background:var(--klp-red);color:#fff;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700">🗑️ 선택 삭제</button>
     </div>
     <input class="search-box" id="historySearch" placeholder="🔍 업체명, 품명, 문서번호로 검색..." oninput="filterHistory()">
+    <!-- 월별 필터 -->
+    <div id="monthFilter" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
   </div>
-  <div id="historyList"></div>
+  <div id="historyList" style="padding-bottom:70px"></div>
+  <!-- 하단 고정 합계 바 -->
+  <div id="historySummaryBar" class="hidden" style="position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1a2e,#16213e);padding:12px 24px;display:flex;justify-content:center;gap:24px;align-items:center;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.15)">
+    <span style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600">합계</span>
+    <span id="sumRevenue" style="color:#5DADE2;font-size:14px;font-weight:800"></span>
+    <span id="sumCost" style="color:#E67E22;font-size:14px;font-weight:800"></span>
+    <span id="sumMargin" style="font-size:14px;font-weight:900"></span>
+  </div>
 </div>
 
 <!-- ================================================================ -->
@@ -352,6 +361,7 @@ function switchMode(mode){
 function showDcTab(tab){
   if(tab==='preview'){if(!validate())return;buildDoc()}
   if(tab==='history')loadHistory();
+  if(tab!=='history'){var sb=document.getElementById('historySummaryBar');if(sb)sb.classList.add('hidden')}
   ['dcForm','dcPreview','dcHistory'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
   ['dcTabForm','dcTabHistory'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
   var map={form:'dcForm',preview:'dcPreview',history:'dcHistory'};
@@ -364,6 +374,7 @@ function showDcTab(tab){
 function showWrTab(tab){
   if(tab==='preview'){if(!validateWr())return;buildWrDoc()}
   if(tab==='history'){loadHistory();}
+  if(tab!=='history'){var sb=document.getElementById('historySummaryBar');if(sb)sb.classList.add('hidden')}
   ['wrForm','wrPreview'].forEach(function(v){document.getElementById(v).classList.add('hidden')});
   document.getElementById('dcHistory').classList.add('hidden');
   ['wrTabForm','wrTabHistory'].forEach(function(t){var e=document.getElementById(t);if(e)e.classList.remove('active')});
@@ -786,16 +797,55 @@ async function loadHistory(){
   try{
     var res=await sbFetch('confirmations?order=created_at.desc&limit=100','GET');
     historyData=res||[];
-    renderHistory(historyData);
+    buildMonthFilter();
+    filterHistory();
   }catch(err){list.innerHTML='<div class="history-empty">불러오기 실패</div>'}
 }
 
-function filterHistory(){var q=document.getElementById('historySearch').value.toLowerCase();if(!q){renderHistory(historyData);return}renderHistory(historyData.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)}))}
+/* 월별 필터 상태 */
+var historyMonth='all'; /* 'all' 또는 '2026-03' 형태 */
 
-/* FIX #12,#14,#15: 히스토리 프로젝트 카드 - 라벨 풀네임, 서브카드 간소화 */
+function filterHistory(){
+  var q=document.getElementById('historySearch').value.toLowerCase();
+  var filtered=historyData;
+  /* 월별 필터 */
+  if(historyMonth!=='all'){
+    filtered=filtered.filter(function(r){
+      var d=r.doc_date||r.delivery_date||'';
+      return d.startsWith(historyMonth);
+    });
+  }
+  /* 텍스트 검색 */
+  if(q){
+    filtered=filtered.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)});
+  }
+  renderHistory(filtered);
+}
+
+function buildMonthFilter(){
+  var months={};
+  historyData.forEach(function(r){
+    var d=r.doc_date||r.delivery_date||'';
+    if(d.length>=7){var m=d.substring(0,7);months[m]=true}
+  });
+  var sorted=Object.keys(months).sort().reverse();
+  var el=document.getElementById('monthFilter');
+  var html='<button onclick="historyMonth=\'all\';filterHistory()" style="padding:5px 12px;border-radius:6px;border:1px solid '+(historyMonth==='all'?'var(--klp-blue)':'var(--klp-border)')+';background:'+(historyMonth==='all'?'var(--klp-blue)':'#fff')+';color:'+(historyMonth==='all'?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">전체</button>';
+  sorted.forEach(function(m){
+    var parts=m.split('-');var label=parts[0]+'년 '+parseInt(parts[1])+'월';
+    html+='<button onclick="historyMonth=\''+m+'\';filterHistory()" style="padding:5px 12px;border-radius:6px;border:1px solid '+(historyMonth===m?'var(--klp-blue)':'var(--klp-border)')+';background:'+(historyMonth===m?'var(--klp-blue)':'#fff')+';color:'+(historyMonth===m?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">'+label+'</button>';
+  });
+  el.innerHTML=html;
+}
+
+/* FIX #17: 히스토리 - 원가 용어, 실제 납기일, 월별 필터, 하단 합계 */
 function renderHistory(data){
   var list=document.getElementById('historyList');
-  if(!data||data.length===0){list.innerHTML='<div class="history-empty">저장된 문서가 없습니다</div>';return}
+  if(!data||data.length===0){
+    list.innerHTML='<div class="history-empty">저장된 문서가 없습니다</div>';
+    document.getElementById('historySummaryBar').classList.add('hidden');
+    return;
+  }
 
   /* DC와 WR을 그룹핑 */
   var dcList=[];var wrMap={};
@@ -807,17 +857,22 @@ function renderHistory(data){
     }else{dcList.push(r)}
   });
 
+  var totalRevenue=0,totalCost=0;
   var html='';
   dcList.forEach(function(dc){
     var linkedWrs=wrMap[dc.doc_number]||[];
     var dday=getDday(dc.delivery_date);
     var ddayColor=dday==='D-DAY'?'#c41e3a':dday.startsWith('D+')?'#999':'#1F85FF';
+    var deliveryDateStr=dc.delivery_date?fmtDate(dc.delivery_date):'';
 
     var revenue=dc.total_amount||0;
     var cost=0;
     linkedWrs.forEach(function(w){cost+=(w.total_amount||0)});
     var margin=revenue-cost;
     var hasWr=linkedWrs.length>0;
+
+    totalRevenue+=revenue;
+    totalCost+=cost;
 
     /* === 프로젝트 카드 시작 === */
     html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
@@ -829,13 +884,13 @@ function renderHistory(data){
     html+='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px">';
     html+='<span style="color:#1F85FF;font-weight:600">매출 : '+fmtN(revenue)+'</span>';
     if(hasWr){
-      html+='<span style="color:#E67E22;font-weight:600">비용 : '+fmtN(cost)+'</span>';
+      html+='<span style="color:#E67E22;font-weight:600">원가 : '+fmtN(cost)+'</span>';
       html+='<span style="font-weight:800;color:'+(margin>=0?'#2ECC71':'#c41e3a')+'">마진 : '+(margin>=0?'+':'')+fmtN(margin)+'</span>';
     }else{
       html+='<span style="color:#aaa;font-size:11px">작업요청서 미연동</span>';
     }
     html+='</div></div>';
-    if(dday){html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:#999;margin-bottom:2px">납기일</div><div style="font-size:16px;font-weight:900;color:'+ddayColor+'">'+dday+'</div></div>'}
+    if(dday){html+='<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:#999;margin-bottom:2px">납기일</div><div style="font-size:16px;font-weight:900;color:'+ddayColor+'">'+dday+'</div>'+(deliveryDateStr?'<div style="font-size:9px;color:#aaa;margin-top:1px">'+deliveryDateStr+'</div>':'')+'</div>'}
     html+='</div>';
 
     /* DC 서브카드 */
@@ -864,6 +919,8 @@ function renderHistory(data){
   Object.keys(wrMap).forEach(function(parentNum){
     if(dcNums[parentNum])return;
     var wrs=wrMap[parentNum];
+    var wrCost=0;wrs.forEach(function(w){wrCost+=(w.total_amount||0)});
+    totalCost+=wrCost;
     html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
     html+='<div style="padding:14px 18px;background:#FFF5F0;border-bottom:1px solid #f0d0b0"><div style="font-size:14px;font-weight:800;color:#E67E22">독립 작업요청서</div></div>';
     wrs.forEach(function(w){
@@ -878,6 +935,16 @@ function renderHistory(data){
   });
 
   list.innerHTML=html||'<div class="history-empty">저장된 문서가 없습니다</div>';
+
+  /* 하단 합계 바 업데이트 */
+  var totalMargin=totalRevenue-totalCost;
+  var bar=document.getElementById('historySummaryBar');
+  bar.classList.remove('hidden');
+  document.getElementById('sumRevenue').textContent='매출 : '+fmtN(totalRevenue);
+  document.getElementById('sumCost').textContent='원가 : '+fmtN(totalCost);
+  var mEl=document.getElementById('sumMargin');
+  mEl.textContent='마진 : '+(totalMargin>=0?'+':'')+fmtN(totalMargin);
+  mEl.style.color=totalMargin>=0?'#2ECC71':'#E74C3C';
 }
 
 /* FIX #2: 히스토리에서 불러오기 - 기존 데이터 보여주기 (새로입력 아님) */
