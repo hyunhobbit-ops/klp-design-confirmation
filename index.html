@@ -791,6 +791,7 @@ function getDday(dateStr){if(!dateStr)return'';var today=new Date();today.setHou
 
 async function loadHistory(){
   selectedIds=[];
+  historyMonth='all'; /* 히스토리 진입 시 항상 전체 */
   var btn=document.getElementById('btnDeleteSelected');if(btn)btn.classList.add('hidden');
   var list=document.getElementById('historyList');
   list.innerHTML='<div class="history-empty">불러오는 중...</div>';
@@ -803,19 +804,25 @@ async function loadHistory(){
 }
 
 /* 월별 필터 상태 */
-var historyMonth='all'; /* 'all' 또는 '2026-03' 형태 */
+var historyMonth='all';
+
+function setMonth(m){
+  historyMonth=m;
+  buildMonthFilter();
+  filterHistory();
+}
 
 function filterHistory(){
   var q=document.getElementById('historySearch').value.toLowerCase();
   var filtered=historyData;
-  /* 월별 필터 */
   if(historyMonth!=='all'){
     filtered=filtered.filter(function(r){
+      /* doc_date, delivery_date, created_at 모두 확인 */
       var d=r.doc_date||r.delivery_date||'';
+      if(!d&&r.created_at)d=r.created_at.substring(0,10);
       return d.startsWith(historyMonth);
     });
   }
-  /* 텍스트 검색 */
   if(q){
     filtered=filtered.filter(function(r){return (r.company_name||'').toLowerCase().includes(q)||(r.product_name||'').toLowerCase().includes(q)||(r.doc_number||'').toLowerCase().includes(q)||(r.title||'').toLowerCase().includes(q)});
   }
@@ -826,14 +833,20 @@ function buildMonthFilter(){
   var months={};
   historyData.forEach(function(r){
     var d=r.doc_date||r.delivery_date||'';
-    if(d.length>=7){var m=d.substring(0,7);months[m]=true}
+    if(!d&&r.created_at)d=r.created_at.substring(0,10);
+    if(d&&d.length>=7){var m=d.substring(0,7);months[m]=true}
   });
   var sorted=Object.keys(months).sort().reverse();
   var el=document.getElementById('monthFilter');
-  var html='<button onclick="historyMonth=\'all\';filterHistory()" style="padding:5px 12px;border-radius:6px;border:1px solid '+(historyMonth==='all'?'var(--klp-blue)':'var(--klp-border)')+';background:'+(historyMonth==='all'?'var(--klp-blue)':'#fff')+';color:'+(historyMonth==='all'?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">전체</button>';
+  if(!el)return;
+  var html='';
+  /* 전체 버튼 */
+  var isAll=historyMonth==='all';
+  html+='<button onclick="setMonth(\'all\')" style="padding:5px 14px;border-radius:6px;border:2px solid '+(isAll?'var(--klp-blue)':'var(--klp-border)')+';background:'+(isAll?'var(--klp-blue)':'#fff')+';color:'+(isAll?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">전체</button>';
   sorted.forEach(function(m){
+    var active=historyMonth===m;
     var parts=m.split('-');var label=parts[0]+'년 '+parseInt(parts[1])+'월';
-    html+='<button onclick="historyMonth=\''+m+'\';filterHistory()" style="padding:5px 12px;border-radius:6px;border:1px solid '+(historyMonth===m?'var(--klp-blue)':'var(--klp-border)')+';background:'+(historyMonth===m?'var(--klp-blue)':'#fff')+';color:'+(historyMonth===m?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">'+label+'</button>';
+    html+='<button onclick="setMonth(\''+m+'\')" style="padding:5px 14px;border-radius:6px;border:2px solid '+(active?'var(--klp-blue)':'var(--klp-border)')+';background:'+(active?'var(--klp-blue)':'#fff')+';color:'+(active?'#fff':'#666')+';cursor:pointer;font-size:11px;font-weight:700;font-family:inherit">'+label+'</button>';
   });
   el.innerHTML=html;
 }
