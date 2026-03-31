@@ -168,8 +168,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 <div id="dcPreview" class="preview-area hidden">
   <div class="action-bar">
     <button class="btn-back" onclick="showDcTab('form')">← 수정하기</button>
-    <button class="btn-save-bar" onclick="saveToDb()" style="animation:none;border-color:var(--klp-blue);background:var(--klp-blue)">💾 다시 저장</button>
-    <button class="btn-dl png" id="btnPng" onclick="dl('png')">📷 PNG</button>
+    <button class="btn-dl png" id="btnJpg" onclick="dl('jpg')">📷 JPG</button>
     <button class="btn-dl pdf" id="btnPdf" onclick="dl('pdf')">📄 PDF</button>
   </div>
   <div class="preview-wrap"><div id="docEl"></div></div>
@@ -247,8 +246,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 <div id="wrPreview" class="preview-area hidden">
   <div class="action-bar">
     <button class="btn-back" onclick="showWrTab('form')">← 수정하기</button>
-    <button class="btn-save-bar" onclick="saveWrToDb()" style="animation:none;border-color:var(--klp-orange);background:var(--klp-orange)">💾 다시 저장</button>
-    <button class="btn-dl wr-png" id="btnWrPng" onclick="dlWr('png')">📷 PNG</button>
+    <button class="btn-dl wr-png" id="btnWrJpg" onclick="dlWr('jpg')">📷 JPG</button>
     <button class="btn-dl wr-pdf" id="btnWrPdf" onclick="dlWr('pdf')">📄 PDF</button>
   </div>
   <div class="preview-wrap"><div id="wrDocEl"></div></div>
@@ -522,12 +520,23 @@ function renderLinkList(data){
   el.innerHTML=data.map(function(r){return '<div class="link-hc" onclick="selectLinkedDC('+r.id+')"><div class="lh-docno">'+esc(r.doc_number)+'</div><div class="lh-title">'+esc(r.company_name)+' — '+esc(r.title)+'</div><div class="lh-sub">📦 '+esc(r.product_name)+' | 💰 '+(r.total_amount?r.total_amount.toLocaleString()+'원':'')+'</div></div>'}).join('');
 }
 
-/* FIX #4: 이미지 연동 - DC 이미지가 메모리에 있으면 복사, 없으면 안내 */
+/* FIX #4, #16: 이미지 연동 + WR 번호 자동 증가 */
 async function selectLinkedDC(id){
   try{var res=await sbFetch('confirmations?id=eq.'+id,'GET');if(!res||res.length===0)return;var r=res[0];
   linkedDC=r;closeLinkModal();
 
-  document.getElementById('wrDocNum').value=(r.doc_number||'')+'_1';
+  /* 해당 DC에 연결된 WR 개수 조회 → 다음 번호 계산 */
+  var dcNum=r.doc_number||'';
+  var wrRes=await sbFetch('confirmations?doc_number=like.'+encodeURIComponent(dcNum+'_')+'*&select=doc_number','GET');
+  var maxSuffix=0;
+  if(wrRes&&wrRes.length>0){
+    wrRes.forEach(function(w){
+      var parts=(w.doc_number||'').split('_');
+      var suffix=parseInt(parts[parts.length-1]);
+      if(!isNaN(suffix)&&suffix>maxSuffix)maxSuffix=suffix;
+    });
+  }
+  document.getElementById('wrDocNum').value=dcNum+'_'+(maxSuffix+1);
   document.getElementById('wrDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('wrTitle').value=r.title||'';
   document.getElementById('wrRequester').value=r.manager||'김현호 팀장';
@@ -564,18 +573,18 @@ function buildDoc(){
   var e=window._est;var showPay=document.getElementById('showPaymentNotice').checked;
   /* ---- 하단 고정 영역 높이 계산 ---- */
   /* 푸터(약40) + 면책(약44) + 결제문구(약24) + 견적(가변) */
-  var fixedBottom=90; /* 푸터+면책 기본 */
-  if(showPay)fixedBottom+=22;
+  var fixedBottom=80; /* 푸터+면책 기본 */
+  if(showPay)fixedBottom+=20;
   var estRows=0;
-  if(e&&e.grand>0){estRows=2;if(e.hasPr)estRows++;if(e.hasPk)estRows++;if(e.vat>0)estRows++;estRows+=1;/* 공급가 */fixedBottom+=40+(estRows*20)+40}
-  /* 상단 고정: 헤더(56)+라인(6)+업체정보(38)+제목(30)+제품정보테이블(약190) = 약320 */
-  var fixedTop=310;
-  /* 이미지 사용 가능 높이 = 1123 - 상하패딩(40) - fixedTop - fixedBottom */
-  var dcImgMaxH=1123-40-fixedTop-fixedBottom;
+  if(e&&e.grand>0){estRows=2;if(e.hasPr)estRows++;if(e.hasPk)estRows++;if(e.vat>0)estRows++;estRows+=1;/* 공급가 */fixedBottom+=30+(estRows*18)+36}
+  /* 상단 고정: 헤더+라인+업체+제목+제품테이블 */
+  var fixedTop=280;
+  /* 이미지 사용 가능 높이 = 1123 - 상하패딩(36) - fixedTop - fixedBottom */
+  var dcImgMaxH=1123-36-fixedTop-fixedBottom;
   if(dcImgMaxH<120)dcImgMaxH=120;
-  if(dcImgMaxH>360)dcImgMaxH=360;
-  var dcMainMaxH=dcImgMaxH-20;
-  if(subImgs.length>0)dcMainMaxH=dcImgMaxH-90;
+  if(dcImgMaxH>450)dcImgMaxH=450;
+  var dcMainMaxH=dcImgMaxH-16;
+  if(subImgs.length>0)dcMainMaxH=dcImgMaxH-84;
   if(dcMainMaxH<80)dcMainMaxH=80;
 
   var imgHtml='';
@@ -620,14 +629,14 @@ function buildWrDoc(){
   var pkgFeeStr=pkf?fmtP(val('wrPkgFee'))+' ('+val('wrPkgFeeVat')+'/'+val('wrPkgFeeApply')+')':'-';
 
   /* ---- 하단 고정 영역 높이 계산 ---- */
-  var fixedBottom=100; /* 푸터+면책+발송인 경고 */
+  var fixedBottom=90; /* 푸터+면책+발송인 경고 */
   var estRows=0;
-  if(we&&we.sup>0){estRows=1;if(we.hasPr)estRows++;if(we.hasPk)estRows++;fixedBottom+=30+(estRows*18)+36}
-  fixedBottom+=70; /* 배송 정보 */
-  var fixedTop=290; /* 헤더+라인+업체+제목+제품테이블 */
+  if(we&&we.sup>0){estRows=1;if(we.hasPr)estRows++;if(we.hasPk)estRows++;fixedBottom+=26+(estRows*16)+32}
+  fixedBottom+=60; /* 배송 정보 */
+  var fixedTop=270; /* 헤더+라인+업체+제목+제품테이블 */
   var wrImgMaxH=1123-36-fixedTop-fixedBottom;
   if(wrImgMaxH<100)wrImgMaxH=100;
-  if(wrImgMaxH>300)wrImgMaxH=300;
+  if(wrImgMaxH>380)wrImgMaxH=380;
   var wrMainMaxH=wrImgMaxH-16;
   if(wrSubImgs.length>0)wrMainMaxH=wrImgMaxH-80;
   if(wrMainMaxH<60)wrMainMaxH=60;
@@ -677,9 +686,9 @@ function buildWrDoc(){
 }
 
 /* === DOWNLOADS === */
-async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnPng'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('companyName')||'KLP';var ds=val('date');if(type==='png'){var a=document.createElement('a');a.download='디자인확인서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('디자인확인서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
+async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnJpg'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('companyName')||'KLP';var ds=val('date');if(type==='jpg'){var a=document.createElement('a');a.download='디자인확인서_'+name+'_'+ds+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('디자인확인서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
 
-async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrPng'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='png'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.png';a.href=canvas.toDataURL('image/png',1.0);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 PNG';b2.textContent='📄 PDF'}
+async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrJpg'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='jpg'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
 
 /* === SUPABASE - DC 저장 (FIX #10: 이미지, FIX #11: 문서번호 기준 덮어쓰기) === */
 async function saveToDb(){if(!validate())return;var e=window._est;var seq=Math.max(1,parseInt(document.getElementById('docSeq').value)||1);
