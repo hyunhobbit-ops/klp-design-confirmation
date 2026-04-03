@@ -495,26 +495,30 @@ function calcWrEst(){
   if(qty===0||up===0){card.classList.add('hidden');mcard.classList.add('hidden');return}
   card.classList.remove('hidden');
 
-  var prodT=up*qty;
+  var prodT=up*qty;var prodV=val('wrUnitPriceVat')==='VAT 별도'?Math.round(prodT*.1):0;
   var hasPr=val('wrPrintMethod')!=='없음'&&pf>0;var prT=0;if(hasPr)prT=val('wrPrintFeeApply')==='1개당'?pf*qty:pf;
+  var prV=(hasPr&&val('wrPrintFeeVat')==='VAT 별도')?Math.round(prT*.1):0;
   var hasPk=pkf>0;var pkT=0;if(hasPk)pkT=val('wrPkgFeeApply')==='1개당'?pkf*qty:pkf;
-  var wrSup=prodT+prT+pkT;
+  var pkV=(hasPk&&val('wrPkgFeeVat')==='VAT 별도')?Math.round(pkT*.1):0;
+  var wrSup=prodT+prT+pkT,wrVat=prodV+prV+pkV,wrGrand=wrSup+wrVat;
 
   var h='<tr><td class="lbl">제품 금액</td><td class="desc">('+fmtN(up)+' × '+qty+')</td><td class="val">'+fmtN(prodT)+'</td></tr>';
   if(hasPr)h+='<tr><td class="lbl">인쇄비</td><td class="desc">('+(val('wrPrintFeeApply')==='1개당'?fmtN(pf)+' × '+qty:'일괄')+')</td><td class="val">'+fmtN(prT)+'</td></tr>';
   if(hasPk)h+='<tr><td class="lbl">포장비</td><td class="desc">('+(val('wrPkgFeeApply')==='1개당'?fmtN(pkf)+' × '+qty:'일괄')+')</td><td class="val">'+fmtN(pkT)+'</td></tr>';
-  h+='<tr class="sep"><td colspan="3"></td></tr><tr class="total"><td class="lbl">매입 합계</td><td></td><td class="val">'+fmtN(wrSup)+'</td></tr>';
+  h+='<tr class="sep"><td colspan="3"></td></tr><tr><td class="lbl">공급가액</td><td></td><td class="val">'+fmtN(wrSup)+'</td></tr>';
+  if(wrVat>0)h+='<tr><td class="lbl">VAT</td><td></td><td class="val">'+fmtN(wrVat)+'</td></tr>';
+  h+='<tr class="sep2"><td colspan="3"></td></tr><tr class="total"><td class="lbl">매입 합계</td><td></td><td class="val">'+fmtN(wrGrand)+'</td></tr>';
   body.innerHTML=h;
-  window._wrEst={prodT:prodT,prT:prT,pkT:pkT,sup:wrSup,hasPr:hasPr,hasPk:hasPk};
+  window._wrEst={prodT:prodT,prT:prT,pkT:pkT,sup:wrSup,vat:wrVat,grand:wrGrand,hasPr:hasPr,hasPk:hasPk};
 
   /* Margin card (화면에서만 보임, 서류에는 안 들어감 - FIX #6) */
   if(linkedDC && linkedDC.total_amount>0){
     mcard.classList.remove('hidden');
     var dcTotal=linkedDC.total_amount;
-    var margin=dcTotal-wrSup;var marginRate=dcTotal>0?Math.round(margin/dcTotal*100):0;
+    var margin=dcTotal-wrGrand;var marginRate=dcTotal>0?Math.round(margin/dcTotal*100):0;
     var isPlus=margin>=0;
     var mh='<tr><td class="mlbl">매출 합계 (디자인확인서)</td><td class="mval">'+fmtN(dcTotal)+'</td></tr>';
-    mh+='<tr><td class="mlbl">매입 합계 (작업요청서)</td><td class="mval">'+fmtN(wrSup)+'</td></tr>';
+    mh+='<tr><td class="mlbl">매입 합계 (작업요청서)</td><td class="mval">'+fmtN(wrGrand)+'</td></tr>';
     mh+='<tr class="msep"><td colspan="2"></td></tr>';
     mh+='<tr class="mtotal"><td class="mlbl">마진 금액</td><td class="mval '+(isPlus?'plus':'minus')+'">'+(isPlus?'+':'')+fmtN(margin)+' ('+marginRate+'%)</td></tr>';
     mbody.innerHTML=mh;
@@ -583,6 +587,12 @@ async function selectLinkedDC(id){
   document.getElementById('wrPackaging').value=r.packaging||'개별박스';
   document.getElementById('wrDeliveryDate').value=r.delivery_date||'';
 
+  /* 배송 정보 연동: "수령인 / 폰 / 주소" 파싱 */
+  var shipParts=(r.delivery_address||'').split(' / ');
+  document.getElementById('wrRecipient').value=shipParts[0]||'';
+  document.getElementById('wrPhone').value=shipParts[1]||'';
+  document.getElementById('wrAddress').value=shipParts[2]||shipParts.join(' ');
+
   /* 이미지 복사: 현재 DC 메모리에 이미지가 있으면 복사 */
   if(mainImg){wrMainImg={url:mainImg.url}}
   if(subImgs.length>0){wrSubImgs=subImgs.map(function(img){return{url:img.url}})}
@@ -624,9 +634,11 @@ function buildDoc(){
   var imgHtml='';
   if(mainImg||subImgs.length>0){imgHtml+='<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 20px">';if(mainImg)imgHtml+='<img src="'+mainImg.url+'" style="max-width:460px;max-height:'+dcMainMaxH+'px;object-fit:contain;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)">';if(subImgs.length>0){imgHtml+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">';subImgs.forEach(function(img){imgHtml+='<img src="'+img.url+'" style="width:70px;height:70px;object-fit:contain;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.06)">'});imgHtml+='</div>'}imgHtml+='</div>'}else{imgHtml='<div style="display:flex;align-items:center;justify-content:center;min-height:80px;color:#ccc;font-size:12px">시안 이미지 없음</div>'}
   var dcShipAddr=[val('dcRecipient'),val('dcPhone'),val('dcAddress')].filter(function(v){return v}).join(' / ')||'확인 필요';
-  var leftRows=[['품명',val('productName')],['수량',qtyStr],['단가',fmtP(val('unitPrice'))+' ('+val('unitPriceVat')+')'],['색상',val('color')],['인쇄 색상/사이즈',val('printColorSize')],['납기',val('deliveryDate')?fmtDate(val('deliveryDate'))+' 출고':''],['직송주소',dcShipAddr]];
+  var leftRows=[['품명',val('productName')],['수량',qtyStr],['단가',fmtP(val('unitPrice'))+' ('+val('unitPriceVat')+')'],['색상',val('color')],['인쇄 색상/사이즈',val('printColorSize')],['납기',val('deliveryDate')?fmtDate(val('deliveryDate'))+' 출고':'']];
   var rightRows=[['인쇄 방법',val('printMethod')]];if(val('printMethod')!=='없음')rightRows.push(['인쇄비',printFeeStr]);rightRows.push(['포장',val('packaging')]);rightRows.push(['포장비',pkgFeeStr]);
   function ic(k,v){return '<tr><td style="padding:5px 12px;font-weight:500;color:#999;font-size:10px;letter-spacing:.3px;border-bottom:1px solid #f0f0f0;width:110px;vertical-align:top">'+k+'</td><td style="padding:5px 12px;font-size:11.5px;border-bottom:1px solid #f0f0f0;color:#222;font-weight:500">'+v+'</td></tr>'}
+  /* 배송 정보 블록 */
+  var dcShipHtml='<div style="padding:8px 0;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#888;letter-spacing:1.5px;margin-bottom:5px">배송 정보</div><table style="width:100%;border-collapse:collapse;font-size:11px"><tr><td style="padding:3px 0;color:#555;font-weight:600;width:60px">수령인</td><td style="padding:3px 0;color:#222">'+esc(val('dcRecipient')||'확인 필요')+'</td></tr><tr><td style="padding:3px 0;color:#555;font-weight:600">연락처</td><td style="padding:3px 0;color:#222">'+esc(val('dcPhone')||'확인 필요')+'</td></tr><tr><td style="padding:3px 0;color:#555;font-weight:600">주소</td><td style="padding:3px 0;color:#222">'+esc(val('dcAddress')||'확인 필요')+'</td></tr></table></div>';
   var estHtml='';
   if(e&&e.grand>0){var rows=[['제품 금액',fmtN(e.prodT)]];if(e.hasPr)rows.push(['인쇄비',fmtN(e.prT)]);if(e.hasPk)rows.push(['포장비',fmtN(e.pkT)]);rows.push(['공급가액',fmtN(e.sup)]);if(e.vat>0)rows.push(['VAT',fmtN(e.vat)]);estHtml='<div style="padding:10px 0 8px;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#1F85FF;letter-spacing:1.5px;margin-bottom:6px">견적 금액</div><table style="width:100%;border-collapse:collapse;font-size:11px">'+rows.map(function(r){return '<tr><td style="padding:3px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:6px;padding-top:8px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:900;color:#222327">합계 금액</span><span style="font-size:20px;font-weight:900;color:#1F85FF;font-variant-numeric:tabular-nums">'+fmtN(e.grand)+'</span></div></div>'}
   var payHtml=showPay?'<div style="text-align:center;padding:4px 0;font-size:10px;color:#c41e3a;font-weight:700;flex-shrink:0">제품은 선입금 50% 확인 후 제작되며, 잔금 결제 확인 후 출고됩니다.</div>':'';
@@ -643,8 +655,8 @@ function buildDoc(){
   '<div style="background:#fafafa;border:1px solid #eee;border-radius:6px;margin-bottom:8px;max-height:'+dcImgMaxH+'px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div>'+
   /* 제품 정보 테이블 */
   '<div style="display:flex;gap:0;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div></div>'+
-  /* 견적 + 결제 */
-  estHtml+payHtml+
+  /* 견적 + 결제 + 배송 */
+  estHtml+dcShipHtml+payHtml+
   /* 스페이서 */
   '<div style="flex:1"></div>'+
   /* 면책 + 서명 */
@@ -690,8 +702,8 @@ function buildWrDoc(){
 
   var estHtml='';
   if(we&&we.sup>0){
-    var erows=[['제품 금액',fmtN(we.prodT)]];if(we.hasPr)erows.push(['인쇄비',fmtN(we.prT)]);if(we.hasPk)erows.push(['포장비',fmtN(we.pkT)]);
-    estHtml='<div style="padding:8px 0 6px;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#E67E22;letter-spacing:1.5px;margin-bottom:5px">매입 금액</div><table style="width:100%;border-collapse:collapse;font-size:11px">'+erows.map(function(r){return '<tr><td style="padding:3px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:5px;padding-top:6px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:900;color:#222327">매입 합계</span><span style="font-size:18px;font-weight:900;color:#E67E22;font-variant-numeric:tabular-nums">'+fmtN(we.sup)+'</span></div></div>';
+    var erows=[['제품 금액',fmtN(we.prodT)]];if(we.hasPr)erows.push(['인쇄비',fmtN(we.prT)]);if(we.hasPk)erows.push(['포장비',fmtN(we.pkT)]);erows.push(['공급가액',fmtN(we.sup)]);if(we.vat>0)erows.push(['VAT',fmtN(we.vat)]);
+    estHtml='<div style="padding:8px 0 6px;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#E67E22;letter-spacing:1.5px;margin-bottom:5px">매입 금액</div><table style="width:100%;border-collapse:collapse;font-size:11px">'+erows.map(function(r){return '<tr><td style="padding:3px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:5px;padding-top:6px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;font-weight:900;color:#222327">매입 합계</span><span style="font-size:18px;font-weight:900;color:#E67E22;font-variant-numeric:tabular-nums">'+fmtN(we.grand)+'</span></div></div>';
   }
 
   var shipHtml='<div style="padding:8px 0;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#888;letter-spacing:1.5px;margin-bottom:5px">배송 정보</div><table style="width:100%;border-collapse:collapse;font-size:11px"><tr><td style="padding:3px 0;color:#555;font-weight:600;width:60px">수령인</td><td style="padding:3px 0;color:#222">'+esc(val('wrRecipient'))+'</td></tr><tr><td style="padding:3px 0;color:#555;font-weight:600">연락처</td><td style="padding:3px 0;color:#222">'+esc(val('wrPhone'))+'</td></tr><tr><td style="padding:3px 0;color:#555;font-weight:600">주소</td><td style="padding:3px 0;color:#222">'+esc(val('wrAddress'))+'</td></tr></table></div>';
@@ -778,7 +790,7 @@ async function saveWrToDb(){
     delivery_date:val('wrDeliveryDate')||null,
     delivery_address:val('wrRecipient')+' / '+val('wrPhone')+' / '+val('wrAddress'),
     show_payment_notice:true,
-    total_amount:we?we.sup:0,
+    total_amount:we?we.grand:0,
     status:'작업요청서',
     images_data:imgData
   };
