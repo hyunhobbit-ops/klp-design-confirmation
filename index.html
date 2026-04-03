@@ -157,8 +157,8 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 <div id="dcForm" class="form-wrap">
   <div class="section"><div class="section-title">📋 문서 정보</div><div class="row" style="align-items:flex-end"><div class="field" style="min-width:220px"><label>문서번호 (자동)</label><div style="display:flex;gap:8px;align-items:center"><div style="padding:9px 12px;background:#eee;border-radius:8px;font-size:13px;color:#555;white-space:nowrap" id="yearPrefix"></div><input type="number" id="docSeq" value="1" min="1" style="width:80px" oninput="updateDocNum()"><div style="font-size:12px;color:#888">→ <b id="docNumPreview"></b></div></div></div><div class="field"><label>날짜</label><input type="date" id="date"></div></div><div class="row"><div class="field"><label>업체명 <span class="req">*</span></label><input id="companyName" placeholder="거래처명"></div><div class="field"><label>담당자 <span class="req">*</span></label><input id="contactPerson" placeholder="담당자님"></div></div><div class="row"><div class="field"><label>제목 <span class="req">*</span></label><input id="title" placeholder="상패 시안"></div><div class="field"><label>본사 담당자</label><select id="manager"><option>이현주 실장</option><option selected>김현호 팀장</option><option>유지은 대리</option></select></div></div></div>
   <div class="section"><div class="section-title">🖼️ 시안 이미지</div><div style="margin-bottom:16px"><div class="sub-label">메인 이미지 <span>(1장)</span></div><div id="mainImgArea"><label class="upload-area" for="mainImgInput"><input type="file" id="mainImgInput" accept="image/*" onchange="handleMainImg(event)"><span style="font-size:24px">📷</span><span style="color:#888;font-size:14px">메인 이미지 1장 선택</span></label></div></div><div><div class="sub-label">추가 이미지 <span>(여러 장 가능)</span></div><label class="upload-area" for="subImgInput" style="padding:20px"><input type="file" id="subImgInput" accept="image/*" multiple onchange="handleSubImgs(event)"><span style="font-size:20px">+</span><span style="color:#888;font-size:13px">추가 이미지 선택</span></label><div class="thumb-list" id="subThumbList"></div></div></div>
-  <div class="section"><div class="section-title">📦 제품 정보</div><div class="row"><div class="field"><label>품명 <span class="req">*</span></label><input id="productName" placeholder="시계 상패"></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>수량 <span class="req">*</span></label><input id="quantity" placeholder="숫자만 입력" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:100px"><label>단위</label><select id="unit"><option>개</option><option>세트</option><option>장</option><option>박스</option><option>EA</option></select></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>단가 <span class="req">*</span></label><input id="unitPrice" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="unitPriceVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div></div><div class="row"><div class="field"><label>색상</label><input id="color" value="-"></div><div class="field"><label>인쇄 색상 및 사이즈</label><input id="printColorSize" value="시안 확인"></div></div><div class="row"><div class="field"><label>인쇄 방법</label><select id="printMethod" onchange="togglePrintFee();calcEst()"><option>없음</option><option>실크인쇄</option><option>레이저각인</option><option>UV인쇄</option><option>패드인쇄</option><option>열전사</option><option>기타</option></select></div></div><div id="printFeeRow" class="hidden"><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>인쇄비</label><input id="printFee" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="printFeeVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div><div class="field" style="flex:1;min-width:100px"><label>적용 방식</label><select id="printFeeApply" onchange="calcEst()"><option>1개당</option><option>일괄</option></select></div></div></div><div class="row"><div class="field"><label>포장</label><select id="packaging"><option>개별박스</option><option>선물포장</option><option>선물포장+라벨부착</option><option>에어캡포장</option><option>기타</option></select></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>포장비</label><input id="packagingFee" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="packagingFeeVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div><div class="field" style="flex:1;min-width:100px"><label>적용 방식</label><select id="packagingFeeApply" onchange="calcEst()"><option>1개당</option><option>일괄</option></select></div></div><div id="estCard" class="est-card hidden"><h3>💰 최종 견적 금액</h3><table><tbody id="estBody"></tbody></table></div></div>
-  <div class="section"><div class="section-title">🚚 납기 및 배송</div><div class="row"><div class="field"><label>납기일 <span class="req">*</span></label><input type="date" id="deliveryDate"></div><div class="field"><label>직송주소</label><input id="deliveryAddress" value="확인 필요" placeholder="배송지 주소"></div></div></div>
+  <div class="section"><div class="section-title">📦 제품 정보</div><div class="row"><div class="field"><label>품명 <span class="req">*</span></label><input id="productName" placeholder="시계 상패"></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>수량 <span class="req">*</span></label><input id="quantity" placeholder="숫자만 입력" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:100px"><label>단위</label><select id="unit"><option>개</option><option>세트</option><option>장</option><option>박스</option><option>EA</option></select></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>단가 <span class="req">*</span></label><input id="unitPrice" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="unitPriceVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div></div><div class="row"><div class="field"><label>색상</label><input id="color" value="-"></div><div class="field"><label>인쇄 색상 및 사이즈</label><input id="printColorSize" value="시안 확인"></div></div><div class="row"><div class="field"><label>인쇄 방법</label><div id="printMethodWrap"><select id="printMethod" onchange="togglePrintCustom('printMethod','printMethodWrap','printMethodCustom');togglePrintFee();calcEst()"><option>없음</option><option>실크인쇄</option><option>레이저각인</option><option>UV인쇄</option><option>패드인쇄</option><option>열전사</option><option>기타</option></select><input id="printMethodCustom" class="hidden" placeholder="인쇄 방법 직접 입력" style="margin-top:6px"></div></div></div><div id="printFeeRow" class="hidden"><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>인쇄비</label><input id="printFee" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="printFeeVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div><div class="field" style="flex:1;min-width:100px"><label>적용 방식</label><select id="printFeeApply" onchange="calcEst()"><option>1개당</option><option>일괄</option></select></div></div></div><div class="row"><div class="field"><label>포장</label><div id="packagingWrap"><select id="packaging" onchange="togglePrintCustom('packaging','packagingWrap','packagingCustom')"><option>개별박스</option><option>선물포장</option><option>선물포장+라벨부착</option><option>에어캡포장</option><option>기타</option></select><input id="packagingCustom" class="hidden" placeholder="포장 방법 직접 입력" style="margin-top:6px"></div></div></div><div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>포장비</label><input id="packagingFee" placeholder="0" oninput="fmtComma(this,calcEst)"></div><div class="field" style="flex:1;min-width:110px"><label>VAT</label><select id="packagingFeeVat" onchange="calcEst()"><option>VAT 별도</option><option>VAT 포함</option></select></div><div class="field" style="flex:1;min-width:100px"><label>적용 방식</label><select id="packagingFeeApply" onchange="calcEst()"><option>1개당</option><option>일괄</option></select></div></div><div id="estCard" class="est-card hidden"><h3>💰 최종 견적 금액</h3><table><tbody id="estBody"></tbody></table></div></div>
+  <div class="section"><div class="section-title">🚚 납기 및 배송</div><div class="row"><div class="field"><label>납기일 <span class="req">*</span></label><input type="date" id="deliveryDate"></div></div><div class="row"><div class="field"><label>수령인</label><input id="dcRecipient" placeholder="수령인 이름"></div><div class="field"><label>핸드폰번호</label><input id="dcPhone" placeholder="010-0000-0000"></div></div><div class="row"><div class="field" style="flex:1"><label>주소</label><input id="dcAddress" placeholder="배송지 주소"></div></div></div>
   <div class="section"><div class="section-title">💬 결제 조건 안내 문구</div><div class="toggle-wrap"><label class="toggle-switch"><input type="checkbox" id="showPaymentNotice" checked onchange="togglePayPreview()"><span class="toggle-slider"></span></label><span class="toggle-label">확인서에 결제 조건 문구 표시</span></div><div id="payPreview" class="toggle-preview">제품은 선입금 50% 확인 후 제작되며, 잔금 결제 확인 후 출고됩니다.</div></div>
   <div class="warn hidden" id="warnBox"></div>
   <button class="btn-preview" onclick="saveAndPreview()">💾 저장 & 미리보기 →</button>
@@ -223,7 +223,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
     <div class="row"><div class="field"><label>품명</label><input id="wrProduct" placeholder="연동 시 자동"></div></div>
     <div class="price-row"><div class="field" style="flex:2;min-width:140px"><label>수량</label><input id="wrQty" placeholder="숫자만" oninput="fmtComma(this,calcWrEst)"></div><div class="field" style="flex:1;min-width:100px"><label>단위</label><select id="wrUnit"><option>개</option><option>세트</option><option>장</option><option>박스</option><option>EA</option></select></div></div>
     <div class="row"><div class="field"><label>색상</label><input id="wrColor" value="-"></div><div class="field"><label>인쇄 색상 및 사이즈</label><input id="wrPrintColorSize" value="시안 확인"></div></div>
-    <div class="row"><div class="field"><label>인쇄 방법</label><select id="wrPrintMethod" onchange="toggleWrPrintFee();calcWrEst()"><option>없음</option><option>실크인쇄</option><option>레이저각인</option><option>UV인쇄</option><option>패드인쇄</option><option>열전사</option><option>기타</option></select></div><div class="field"><label>포장</label><select id="wrPackaging"><option>개별박스</option><option>선물포장</option><option>선물포장+라벨부착</option><option>에어캡포장</option><option>기타</option></select></div></div>
+    <div class="row"><div class="field"><label>인쇄 방법</label><div id="wrPrintMethodWrap"><select id="wrPrintMethod" onchange="togglePrintCustom('wrPrintMethod','wrPrintMethodWrap','wrPrintMethodCustom');toggleWrPrintFee();calcWrEst()"><option>없음</option><option>실크인쇄</option><option>레이저각인</option><option>UV인쇄</option><option>패드인쇄</option><option>열전사</option><option>기타</option></select><input id="wrPrintMethodCustom" class="hidden" placeholder="인쇄 방법 직접 입력" style="margin-top:6px"></div></div><div class="field"><label>포장</label><div id="wrPackagingWrap"><select id="wrPackaging" onchange="togglePrintCustom('wrPackaging','wrPackagingWrap','wrPackagingCustom')"><option>개별박스</option><option>선물포장</option><option>선물포장+라벨부착</option><option>에어캡포장</option><option>기타</option></select><input id="wrPackagingCustom" class="hidden" placeholder="포장 방법 직접 입력" style="margin-top:6px"></div></div></div>
   </div>
 
   <div class="section"><div class="section-title">💰 단가 / 인쇄비 / 포장비 (매입가)</div>
@@ -296,7 +296,12 @@ var wrMainImg=null,wrSubImgs=[];
 var linkedDC=null;
 
 /* === UTILS === */
-function val(id){return document.getElementById(id).value.trim()}
+function val(id){
+  var v=document.getElementById(id).value.trim();
+  /* 기타 선택된 경우 커스텀 입력값 사용 */
+  if(v==='기타'){var c=document.getElementById(id+'Custom');if(c&&c.value.trim())return c.value.trim();return '기타'}
+  return v;
+}
 function toNum(v){var n=parseInt(String(v).replace(/\D/g,''));return isNaN(n)?0:n}
 function fmtDate(d){if(!d)return'';var o=new Date(d);return o.getFullYear()+'년 '+(o.getMonth()+1)+'월 '+o.getDate()+'일'}
 function fmtN(n){return n.toLocaleString()+'원'}
@@ -405,9 +410,27 @@ function handleWrSubImgs(e){Array.from(e.target.files).forEach(function(f){var r
 function renderWrSubThumbs(){document.getElementById('wrSubThumbList').innerHTML=wrSubImgs.map(function(img,i){return '<div class="thumb"><img src="'+img.url+'" style="width:100px;height:100px"><button class="del" onclick="removeWrSub('+i+')">×</button></div>'}).join('')}
 function removeWrSub(i){wrSubImgs.splice(i,1);renderWrSubThumbs()}
 
-function togglePrintFee(){document.getElementById('printFeeRow').classList.toggle('hidden',val('printMethod')==='없음')}
-function toggleWrPrintFee(){document.getElementById('wrPrintFeeRow').classList.toggle('hidden',val('wrPrintMethod')==='없음')}
+function togglePrintFee(){document.getElementById('printFeeRow').classList.toggle('hidden',valField('printMethod')==='없음')}
+function toggleWrPrintFee(){document.getElementById('wrPrintFeeRow').classList.toggle('hidden',valField('wrPrintMethod')==='없음')}
 function togglePayPreview(){document.getElementById('payPreview').style.display=document.getElementById('showPaymentNotice').checked?'':'none'}
+
+/* #1: 기타 선택 시 텍스트 입력창 토글 */
+function togglePrintCustom(selectId,wrapId,customId){
+  var sel=document.getElementById(selectId);
+  var custom=document.getElementById(customId);
+  if(sel.value==='기타'){custom.classList.remove('hidden');custom.focus()}
+  else{custom.classList.add('hidden');custom.value=''}
+}
+/* 인쇄방법/포장 값 가져오기: 기타면 커스텀 입력값 사용 */
+function valField(id){
+  var v=document.getElementById(id).value.trim();
+  if(v==='기타'){
+    var customId=id+'Custom';
+    var customEl=document.getElementById(customId);
+    if(customEl&&customEl.value.trim())return customEl.value.trim();
+  }
+  return v;
+}
 
 /* === DC ESTIMATE === */
 function calcEst(){
@@ -593,15 +616,16 @@ function buildDoc(){
   /* 이미지 사용 가능 높이 = 1123 - 상하패딩(36) - fixedTop - fixedBottom */
   var dcImgMaxH=1123-36-fixedTop-fixedBottom;
   if(dcImgMaxH<120)dcImgMaxH=120;
-  if(dcImgMaxH>450)dcImgMaxH=450;
+  if(dcImgMaxH>580)dcImgMaxH=580;
   var dcMainMaxH=dcImgMaxH-16;
   if(subImgs.length>0)dcMainMaxH=dcImgMaxH-84;
   if(dcMainMaxH<80)dcMainMaxH=80;
 
   var imgHtml='';
-  if(mainImg||subImgs.length>0){imgHtml+='<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 20px">';if(mainImg)imgHtml+='<img src="'+mainImg.url+'" style="max-width:340px;max-height:'+dcMainMaxH+'px;object-fit:contain;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)">';if(subImgs.length>0){imgHtml+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">';subImgs.forEach(function(img){imgHtml+='<img src="'+img.url+'" style="width:70px;height:70px;object-fit:contain;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.06)">'});imgHtml+='</div>'}imgHtml+='</div>'}else{imgHtml='<div style="display:flex;align-items:center;justify-content:center;min-height:80px;color:#ccc;font-size:12px">시안 이미지 없음</div>'}
-  var leftRows=[['품명',val('productName')],['수량',qtyStr],['단가',fmtP(val('unitPrice'))+' ('+val('unitPriceVat')+')'],['색상',val('color')],['인쇄 색상/사이즈',val('printColorSize')],['납기',val('deliveryDate')?fmtDate(val('deliveryDate'))+' 출고':''],['직송주소',val('deliveryAddress')]];
-  var rightRows=[['인쇄 방법',val('printMethod')]];if(val('printMethod')!=='없음')rightRows.push(['인쇄비',printFeeStr]);rightRows.push(['포장',val('packaging')]);if(pkf>0)rightRows.push(['포장비',pkgFeeStr]);
+  if(mainImg||subImgs.length>0){imgHtml+='<div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 20px">';if(mainImg)imgHtml+='<img src="'+mainImg.url+'" style="max-width:460px;max-height:'+dcMainMaxH+'px;object-fit:contain;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)">';if(subImgs.length>0){imgHtml+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">';subImgs.forEach(function(img){imgHtml+='<img src="'+img.url+'" style="width:70px;height:70px;object-fit:contain;border-radius:3px;box-shadow:0 1px 4px rgba(0,0,0,.06)">'});imgHtml+='</div>'}imgHtml+='</div>'}else{imgHtml='<div style="display:flex;align-items:center;justify-content:center;min-height:80px;color:#ccc;font-size:12px">시안 이미지 없음</div>'}
+  var dcShipAddr=[val('dcRecipient'),val('dcPhone'),val('dcAddress')].filter(function(v){return v}).join(' / ')||'확인 필요';
+  var leftRows=[['품명',val('productName')],['수량',qtyStr],['단가',fmtP(val('unitPrice'))+' ('+val('unitPriceVat')+')'],['색상',val('color')],['인쇄 색상/사이즈',val('printColorSize')],['납기',val('deliveryDate')?fmtDate(val('deliveryDate'))+' 출고':''],['직송주소',dcShipAddr]];
+  var rightRows=[['인쇄 방법',val('printMethod')]];if(val('printMethod')!=='없음')rightRows.push(['인쇄비',printFeeStr]);rightRows.push(['포장',val('packaging')]);rightRows.push(['포장비',pkgFeeStr]);
   function ic(k,v){return '<tr><td style="padding:5px 12px;font-weight:500;color:#999;font-size:10px;letter-spacing:.3px;border-bottom:1px solid #f0f0f0;width:110px;vertical-align:top">'+k+'</td><td style="padding:5px 12px;font-size:11.5px;border-bottom:1px solid #f0f0f0;color:#222;font-weight:500">'+v+'</td></tr>'}
   var estHtml='';
   if(e&&e.grand>0){var rows=[['제품 금액',fmtN(e.prodT)]];if(e.hasPr)rows.push(['인쇄비',fmtN(e.prT)]);if(e.hasPk)rows.push(['포장비',fmtN(e.pkT)]);rows.push(['공급가액',fmtN(e.sup)]);if(e.vat>0)rows.push(['VAT',fmtN(e.vat)]);estHtml='<div style="padding:10px 0 8px;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#1F85FF;letter-spacing:1.5px;margin-bottom:6px">견적 금액</div><table style="width:100%;border-collapse:collapse;font-size:11px">'+rows.map(function(r){return '<tr><td style="padding:3px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:6px;padding-top:8px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:900;color:#222327">합계 금액</span><span style="font-size:20px;font-weight:900;color:#1F85FF;font-variant-numeric:tabular-nums">'+fmtN(e.grand)+'</span></div></div>'}
@@ -614,7 +638,7 @@ function buildDoc(){
   /* 업체 정보 */
   '<div style="display:flex;gap:0;margin-bottom:8px;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">업체명</div><div style="font-size:14px;font-weight:700;color:#222327">'+val('companyName')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">담당자</div><div style="font-size:12px;font-weight:700;color:#222327">'+val('contactPerson')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">본사 담당</div><div style="font-size:12px;font-weight:700;color:#1F85FF">'+val('manager')+'</div></div></div>'+
   /* 제목 */
-  '<div style="background:#F4F3EA;border-radius:5px;padding:6px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:12px;font-weight:700;color:#333">'+val('title')+'</span></div>'+
+  '<div style="background:#F4F3EA;border-radius:5px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:15px;font-weight:800;color:#333">'+val('title')+'</span></div>'+
   /* 이미지 */
   '<div style="background:#fafafa;border:1px solid #eee;border-radius:6px;margin-bottom:8px;max-height:'+dcImgMaxH+'px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div>'+
   /* 제품 정보 테이블 */
@@ -647,7 +671,7 @@ function buildWrDoc(){
   var fixedTop=270; /* 헤더+라인+업체+제목+제품테이블 */
   var wrImgMaxH=1123-36-fixedTop-fixedBottom;
   if(wrImgMaxH<100)wrImgMaxH=100;
-  if(wrImgMaxH>380)wrImgMaxH=380;
+  if(wrImgMaxH>450)wrImgMaxH=450;
   var wrMainMaxH=wrImgMaxH-16;
   if(wrSubImgs.length>0)wrMainMaxH=wrImgMaxH-80;
   if(wrMainMaxH<60)wrMainMaxH=60;
@@ -661,7 +685,7 @@ function buildWrDoc(){
   var rightRows=[['인쇄 방법',esc(val('wrPrintMethod'))]];
   if(val('wrPrintMethod')!=='없음'&&pf>0)rightRows.push(['인쇄비',printFeeStr]);
   rightRows.push(['포장',esc(val('wrPackaging'))]);
-  if(pkf>0)rightRows.push(['포장비',pkgFeeStr]);
+  rightRows.push(['포장비',pkgFeeStr]);
   rightRows.push(['납기',val('wrDeliveryDate')?fmtDate(val('wrDeliveryDate'))+' 출고':'']);
 
   var estHtml='';
@@ -679,7 +703,7 @@ function buildWrDoc(){
   /* 업체 정보 */
   '<div style="display:flex;gap:0;margin-bottom:8px;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">업체명</div><div style="font-size:14px;font-weight:700;color:#222327">'+esc(val('wrCompany'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">담당자</div><div style="font-size:12px;font-weight:700;color:#222327">'+esc(val('wrContact'))+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">요청자</div><div style="font-size:12px;font-weight:700;color:#E67E22">'+esc(val('wrRequester'))+'</div></div></div>'+
   /* 제목 */
-  '<div style="background:#F4F3EA;border-radius:5px;padding:6px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:12px;font-weight:700;color:#333">'+esc(val('wrTitle'))+'</span></div>'+
+  '<div style="background:#F4F3EA;border-radius:5px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:15px;font-weight:800;color:#333">'+esc(val('wrTitle'))+'</span></div>'+
   /* 이미지 */
   '<div style="background:#fafafa;border:1px solid #eee;border-radius:6px;margin-bottom:8px;max-height:'+wrImgMaxH+'px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div>'+
   /* 제품 정보 테이블 */
@@ -697,15 +721,18 @@ function buildWrDoc(){
 }
 
 /* === DOWNLOADS === */
-async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnJpg'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('companyName')||'KLP';var ds=val('date');if(type==='jpg'){var a=document.createElement('a');a.download='디자인확인서_'+name+'_'+ds+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('디자인확인서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
+/* YYMMDD 포맷 함수 */
+function getYYMMDD(dateStr){if(!dateStr)return'000000';var d=dateStr.replace(/-/g,'');return d.length>=8?d.substring(2,8):d}
 
-async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrJpg'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var name=val('wrCompany')||'KLP';var ds=val('wrDate');if(type==='jpg'){var a=document.createElement('a');a.download='작업요청서_'+name+'_'+ds+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save('작업요청서_'+name+'_'+ds+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
+async function dl(type){var el=document.getElementById('docEl');var b1=document.getElementById('btnJpg'),b2=document.getElementById('btnPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var fname=getYYMMDD(val('date'))+'_케이엘피코리아_'+(val('companyName')||'업체')+'_'+(val('productName')||'품명')+'_디자인확인서';if(type==='jpg'){var a=document.createElement('a');a.download=fname+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save(fname+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
+
+async function dlWr(type){var el=document.getElementById('wrDocEl');var b1=document.getElementById('btnWrJpg'),b2=document.getElementById('btnWrPdf');b1.disabled=b2.disabled=true;b1.textContent='생성 중...';b2.textContent='생성 중...';try{var canvas=await html2canvas(el,{scale:3,useCORS:true,backgroundColor:'#fff',logging:false,width:794,height:1123,windowWidth:794,windowHeight:1123});var fname=getYYMMDD(val('wrDate'))+'_케이엘피코리아_'+(val('wrCompany')||'업체')+'_'+(val('wrProduct')||'품명')+'_작업요청서';if(type==='jpg'){var a=document.createElement('a');a.download=fname+'.jpg';a.href=canvas.toDataURL('image/jpeg',0.92);a.click()}else{var pdf=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});var pw=pdf.internal.pageSize.getWidth();var ph=pdf.internal.pageSize.getHeight();pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,pw,ph);pdf.save(fname+'.pdf')}}catch(err){alert('오류: '+err.message)}b1.disabled=b2.disabled=false;b1.textContent='📷 JPG';b2.textContent='📄 PDF'}
 
 /* === SUPABASE - DC 저장 (FIX #10: 이미지, FIX #11: 문서번호 기준 덮어쓰기) === */
 async function saveToDb(){if(!validate())return;var e=window._est;var seq=Math.max(1,parseInt(document.getElementById('docSeq').value)||1);
   var imgData=await packImages(mainImg,subImgs,400,400);
   var docNum=Y+'_'+String(seq).padStart(4,'0');
-  var data={doc_number:docNum,doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('deliveryAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중',images_data:imgData};
+  var data={doc_number:docNum,doc_date:val('date')||null,company_name:val('companyName'),contact_person:val('contactPerson'),title:val('title'),manager:val('manager'),product_name:val('productName'),quantity:toNum(val('quantity')),unit:val('unit'),unit_price:toNum(val('unitPrice')),unit_price_vat:val('unitPriceVat'),color:val('color'),print_color_size:val('printColorSize'),print_method:val('printMethod'),print_fee:toNum(val('printFee'))||0,print_fee_vat:val('printFeeVat'),print_fee_apply:val('printFeeApply'),packaging:val('packaging'),packaging_fee:toNum(val('packagingFee'))||0,packaging_fee_vat:val('packagingFeeVat'),packaging_fee_apply:val('packagingFeeApply'),delivery_date:val('deliveryDate')||null,delivery_address:val('dcRecipient')+' / '+val('dcPhone')+' / '+val('dcAddress'),show_payment_notice:document.getElementById('showPaymentNotice').checked,total_amount:e?e.grand:0,status:'작성중',images_data:imgData};
   try{
     /* 같은 문서번호 존재 여부 확인 */
     var existing=await sbFetch('confirmations?doc_number=eq.'+encodeURIComponent(docNum)+'&select=id','GET');
@@ -774,9 +801,8 @@ async function newDoc(){
   var nextSeq=await getNextSeqSafe();
   document.getElementById('docSeq').value=nextSeq;updateDocNum();
   document.getElementById('date').value=new Date().toISOString().split('T')[0];
-  ['companyName','contactPerson','title','productName','quantity','unitPrice','printFee','packagingFee','deliveryDate'].forEach(function(id){document.getElementById(id).value=''});
+  ['companyName','contactPerson','title','productName','quantity','unitPrice','printFee','packagingFee','deliveryDate','dcRecipient','dcPhone','dcAddress'].forEach(function(id){document.getElementById(id).value=''});
   document.getElementById('color').value='-';document.getElementById('printColorSize').value='시안 확인';
-  document.getElementById('deliveryAddress').value='확인 필요';
   document.getElementById('manager').value='김현호 팀장';
   document.getElementById('unit').value='개';document.getElementById('unitPriceVat').value='VAT 별도';
   document.getElementById('printMethod').value='없음';togglePrintFee();
@@ -1032,7 +1058,11 @@ async function loadRecord(id){
       document.getElementById('packagingFeeVat').value=r.packaging_fee_vat||'VAT 별도';
       document.getElementById('packagingFeeApply').value=r.packaging_fee_apply||'1개당';
       document.getElementById('deliveryDate').value=r.delivery_date||'';
-      document.getElementById('deliveryAddress').value=r.delivery_address||'확인 필요';
+      /* 배송정보 파싱: "수령인 / 폰 / 주소" */
+      var dcAddrParts=(r.delivery_address||'').split(' / ');
+      document.getElementById('dcRecipient').value=dcAddrParts[0]||'';
+      document.getElementById('dcPhone').value=dcAddrParts[1]||'';
+      document.getElementById('dcAddress').value=dcAddrParts[2]||dcAddrParts.join(' ');
       document.getElementById('showPaymentNotice').checked=r.show_payment_notice!==false;togglePayPreview();
       /* 이미지 복원 (FIX #10) */
       if(r.images_data){var imgs=unpackImages(r.images_data);mainImg=imgs.main;subImgs=imgs.subs}else{mainImg=null;subImgs=[]}
