@@ -619,6 +619,7 @@ function buildDoc(){
   /* 푸터(약40) + 면책(약44) + 결제문구(약24) + 견적(가변) */
   var fixedBottom=80; /* 푸터+면책 기본 */
   if(showPay)fixedBottom+=20;
+  fixedBottom+=65; /* 배송 정보 블록 */
   var estRows=0;
   if(e&&e.grand>0){estRows=2;if(e.hasPr)estRows++;if(e.hasPk)estRows++;if(e.vat>0)estRows++;estRows+=1;/* 공급가 */fixedBottom+=30+(estRows*18)+36}
   /* 상단 고정: 헤더+라인+업체+제목+제품테이블 */
@@ -626,7 +627,7 @@ function buildDoc(){
   /* 이미지 사용 가능 높이 = 1123 - 상하패딩(36) - fixedTop - fixedBottom */
   var dcImgMaxH=1123-36-fixedTop-fixedBottom;
   if(dcImgMaxH<120)dcImgMaxH=120;
-  if(dcImgMaxH>580)dcImgMaxH=580;
+  if(dcImgMaxH>440)dcImgMaxH=440;
   var dcMainMaxH=dcImgMaxH-16;
   if(subImgs.length>0)dcMainMaxH=dcImgMaxH-84;
   if(dcMainMaxH<80)dcMainMaxH=80;
