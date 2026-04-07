@@ -615,21 +615,37 @@ function buildDoc(){
   var printFeeStr=pf?fmtP(val('printFee'))+' ('+val('printFeeVat')+'/'+val('printFeeApply')+')':'-';
   var pkgFeeStr=pkf?fmtP(val('packagingFee'))+' ('+val('packagingFeeVat')+'/'+val('packagingFeeApply')+')':'-';
   var e=window._est;var showPay=document.getElementById('showPaymentNotice').checked;
-  /* ---- 하단 고정 영역 높이 계산 ---- */
-  /* 푸터(약40) + 면책(약44) + 결제문구(약24) + 견적(가변) */
-  var fixedBottom=80; /* 푸터+면책 기본 */
-  if(showPay)fixedBottom+=20;
-  fixedBottom+=65; /* 배송 정보 블록 */
+  /* ====================================================
+     FIXED LAYOUT HEIGHTS (header & footer never move)
+     ==================================================== */
+  var PAD_TOP=20,PAD_BOTTOM=16,PAD_LR=28;
+  var HEADER_H=44;
+  var LINE_H=13;
+  var INFO_H=48;
+  var TITLE_H=39;
+  var DISCLAIM_H=46;
+  var FOOTER_GAP=6;
+  var FOOTER_H=36;
+  var PAY_H=showPay?18:0;
+
+  var fixedTop=HEADER_H+LINE_H+INFO_H+TITLE_H;
+  var fixedBottom=PAY_H+DISCLAIM_H+FOOTER_GAP+FOOTER_H;
+  var middleH=A4H-PAD_TOP-PAD_BOTTOM-fixedTop-fixedBottom;
+
+  /* --- 중간 콘텐츠 높이 계산 --- */
+  var productTableH=140;
+  var shipH=65;
+  var estBlockH=0;
   var estRows=0;
-  if(e&&e.grand>0){estRows=2;if(e.hasPr)estRows++;if(e.hasPk)estRows++;if(e.vat>0)estRows++;estRows+=1;/* 공급가 */fixedBottom+=30+(estRows*18)+36}
-  /* 상단 고정: 헤더+라인+업체+제목+제품테이블 */
-  var fixedTop=280;
-  /* 이미지 사용 가능 높이 = 1123 - 상하패딩(36) - fixedTop - fixedBottom */
-  var dcImgMaxH=1123-36-fixedTop-fixedBottom;
-  if(dcImgMaxH<120)dcImgMaxH=120;
-  if(dcImgMaxH>380)dcImgMaxH=380;
-  var dcMainMaxH=dcImgMaxH-16;
-  if(subImgs.length>0)dcMainMaxH=dcImgMaxH-84;
+  if(e&&e.grand>0){estRows=2;if(e.hasPr)estRows++;if(e.hasPk)estRows++;if(e.vat>0)estRows++;estRows+=1;estBlockH=30+(estRows*18)+36}
+  var contentNeeded=productTableH+shipH+estBlockH+20;
+
+  var hasImgs=mainImg||subImgs.length>0;
+  var imgAreaH=hasImgs?Math.max(0,middleH-contentNeeded):0;
+  if(hasImgs&&imgAreaH<120)imgAreaH=120;
+  if(imgAreaH>380)imgAreaH=380;
+  var subRowH=subImgs.length>0?84:0;
+  var dcMainMaxH=imgAreaH-subRowH-16;
   if(dcMainMaxH<80)dcMainMaxH=80;
 
   var imgHtml='';
@@ -643,28 +659,35 @@ function buildDoc(){
   var estHtml='';
   if(e&&e.grand>0){var rows=[['제품 금액',fmtN(e.prodT)]];if(e.hasPr)rows.push(['인쇄비',fmtN(e.prT)]);if(e.hasPk)rows.push(['포장비',fmtN(e.pkT)]);rows.push(['공급가액',fmtN(e.sup)]);if(e.vat>0)rows.push(['VAT',fmtN(e.vat)]);estHtml='<div style="padding:10px 0 8px;border-top:1px solid #e8e8e5;flex-shrink:0"><div style="font-size:10px;font-weight:700;color:#1F85FF;letter-spacing:1.5px;margin-bottom:6px">견적 금액</div><table style="width:100%;border-collapse:collapse;font-size:11px">'+rows.map(function(r){return '<tr><td style="padding:3px 0;color:#555;font-weight:500">'+r[0]+'</td><td style="padding:3px 0;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-weight:500">'+r[1]+'</td></tr>'}).join('')+'</table><div style="margin-top:6px;padding-top:8px;border-top:2px solid #222327;display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:900;color:#222327">합계 금액</span><span style="font-size:20px;font-weight:900;color:#1F85FF;font-variant-numeric:tabular-nums">'+fmtN(e.grand)+'</span></div></div>'}
   var payHtml=showPay?'<div style="text-align:center;padding:4px 0;font-size:10px;color:#c41e3a;font-weight:700;flex-shrink:0">제품은 선입금 50% 확인 후 제작되며, 잔금 결제 확인 후 출고됩니다.</div>':'';
-  document.getElementById('docEl').innerHTML='<div id="dcDocInner" style="width:794px;height:1123px;overflow:hidden;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;position:relative"><div style="padding:20px 28px 16px;display:flex;flex-direction:column;height:1123px">'+
-  /* 헤더 */
-  '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-shrink:0"><div><div style="font-size:10px;color:#999;letter-spacing:3px;font-weight:500;margin-bottom:2px">DESIGN CONFIRMATION</div><div style="font-size:24px;font-weight:900;color:#222327;letter-spacing:2px">디자인확인서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:22px;margin-bottom:2px"><div style="font-size:9px;color:#aaa;margin-top:1px">NO. '+docNum+' | '+fmtDate(val('date'))+'</div></div></div>'+
-  /* 라인 */
-  '<div style="height:3px;background:linear-gradient(90deg,#1F85FF,#CDE6F7);border-radius:2px;margin-bottom:10px;flex-shrink:0"></div>'+
-  /* 업체 정보 */
-  '<div style="display:flex;gap:0;margin-bottom:8px;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">업체명</div><div style="font-size:14px;font-weight:700;color:#222327">'+val('companyName')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">담당자</div><div style="font-size:12px;font-weight:700;color:#222327">'+val('contactPerson')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">본사 담당</div><div style="font-size:12px;font-weight:700;color:#1F85FF">'+val('manager')+'</div></div></div>'+
-  /* 제목 */
-  '<div style="background:#F4F3EA;border-radius:5px;padding:8px 14px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:15px;font-weight:800;color:#333">'+val('title')+'</span></div>'+
-  /* 이미지 */
-  '<div style="background:#fafafa;border:1px solid #eee;border-radius:6px;margin-bottom:8px;max-height:'+dcImgMaxH+'px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div>'+
-  /* 제품 정보 테이블 */
-  '<div style="display:flex;gap:0;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div></div>'+
-  /* 견적 + 결제 + 배송 */
-  estHtml+dcShipHtml+payHtml+
-  /* 스페이서 */
-  '<div style="flex:1"></div>'+
-  /* 면책 + 서명 */
-  '<div style="padding:8px 14px;background:#F4F3EA;border-radius:5px;font-size:8.5px;color:#999;line-height:1.6;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-shrink:0"><div><div>• 최종 승인 후 수정은 불가하며, 이후 발생되는 문제는 당사가 책임지지 않습니다.</div><div>• 제품에 따라 사이즈 및 색상은 약간의 오차가 있을 수 있습니다.</div></div><div style="text-align:center;min-width:80px"><div style="font-size:8px;color:#bbb;margin-bottom:2px">확인 서명</div><div style="border-bottom:1.5px solid #aaa;width:70px;height:20px"></div></div></div>'+
-  /* 푸터 */
-  '<div style="margin-top:6px;padding:8px 14px;background:#222327;border-radius:5px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0"><img src="'+LOGO_WHITE+'" style="height:14px"><div style="color:rgba(255,255,255,.55);font-size:7px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div>'+
-  '</div></div>';
+
+  /* ====================================================
+     ASSEMBLE DOCUMENT — header & footer absolute-fixed
+     ==================================================== */
+  document.getElementById('docEl').innerHTML='<div id="dcDocInner" style="width:'+A4W+'px;height:'+A4H+'px;overflow:hidden;background:#fff;font-family:\'Noto Sans KR\',sans-serif;font-size:12px;color:#222327;position:relative">'+
+
+  /* === FIXED HEADER (top) === */
+  '<div style="position:absolute;top:0;left:0;right:0;padding:'+PAD_TOP+'px '+PAD_LR+'px 0">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><div style="font-size:10px;color:#999;letter-spacing:3px;font-weight:500;margin-bottom:2px">DESIGN CONFIRMATION</div><div style="font-size:24px;font-weight:900;color:#222327;letter-spacing:2px">디자인확인서</div></div><div style="text-align:right"><img src="'+LOGO_DARK+'" style="height:22px;margin-bottom:2px"><div style="font-size:9px;color:#aaa;margin-top:1px">NO. '+docNum+' | '+fmtDate(val('date'))+'</div></div></div>'+
+    '<div style="height:3px;background:linear-gradient(90deg,#1F85FF,#CDE6F7);border-radius:2px;margin-bottom:10px"></div>'+
+    '<div style="display:flex;gap:0;margin-bottom:8px;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden"><div style="flex:1;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">업체명</div><div style="font-size:14px;font-weight:700;color:#222327">'+val('companyName')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">담당자</div><div style="font-size:12px;font-weight:700;color:#222327">'+val('contactPerson')+'</div></div><div style="width:1px;background:#e8e8e5"></div><div style="flex:0 0 140px;padding:8px 14px;background:#F4F3EA"><div style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px;margin-bottom:1px">본사 담당</div><div style="font-size:12px;font-weight:700;color:#1F85FF">'+val('manager')+'</div></div></div>'+
+    '<div style="background:#F4F3EA;border-radius:5px;padding:8px 14px;display:flex;align-items:center;gap:8px"><span style="font-size:9px;color:#999;font-weight:600;letter-spacing:1px">제목</span><span style="font-size:15px;font-weight:800;color:#333">'+val('title')+'</span></div>'+
+  '</div>'+
+
+  /* === FIXED FOOTER (bottom) === */
+  '<div style="position:absolute;bottom:0;left:0;right:0;padding:0 '+PAD_LR+'px '+PAD_BOTTOM+'px">'+
+    payHtml+
+    '<div style="padding:8px 14px;background:#F4F3EA;border-radius:5px;font-size:8.5px;color:#999;line-height:1.6;display:flex;justify-content:space-between;align-items:center;gap:12px"><div><div>• 최종 승인 후 수정은 불가하며, 이후 발생되는 문제는 당사가 책임지지 않습니다.</div><div>• 제품에 따라 사이즈 및 색상은 약간의 오차가 있을 수 있습니다.</div></div><div style="text-align:center;min-width:80px"><div style="font-size:8px;color:#bbb;margin-bottom:2px">확인 서명</div><div style="border-bottom:1.5px solid #aaa;width:70px;height:20px"></div></div></div>'+
+    '<div style="margin-top:'+FOOTER_GAP+'px;padding:8px 14px;background:#222327;border-radius:5px;display:flex;align-items:center;justify-content:space-between"><img src="'+LOGO_WHITE+'" style="height:14px"><div style="color:rgba(255,255,255,.55);font-size:7px;line-height:1.5;text-align:right">서울 구로구 디지털로32길 30, 코오롱빌란트 1차 901호 | T. 02-2103-5757<br>klpkorea.co.kr | agift.kr | showroom.co.kr | klpkorea@agift.kr</div></div>'+
+  '</div>'+
+
+  /* === MIDDLE CONTENT (between header & footer) === */
+  '<div style="position:absolute;top:'+(PAD_TOP+fixedTop)+'px;bottom:'+(PAD_BOTTOM+fixedBottom)+'px;left:'+PAD_LR+'px;right:'+PAD_LR+'px;overflow:hidden;display:flex;flex-direction:column">'+
+    (hasImgs?'<div style="background:#fafafa;border:1px solid #eee;border-radius:6px;margin:8px 0;height:'+imgAreaH+'px;overflow:hidden;flex-shrink:0">'+imgHtml+'</div>':'')+
+    '<div style="display:flex;gap:0;border:1px solid #e8e8e5;border-radius:6px;overflow:hidden;flex-shrink:0"><div style="flex:1;border-right:1px solid #e8e8e5"><table style="width:100%;border-collapse:collapse">'+leftRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div><div style="flex:1"><table style="width:100%;border-collapse:collapse">'+rightRows.map(function(r){return ic(r[0],r[1])}).join('')+'</table></div></div>'+
+    estHtml+dcShipHtml+
+  '</div>'+
+
+  '</div>';
   setTimeout(function(){fitToA4('docEl')},100);
 }
 
