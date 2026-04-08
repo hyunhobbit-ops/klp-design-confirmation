@@ -147,7 +147,7 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
 
 <!-- ===== WR SUB TABS ===== -->
 <div class="sub-bar hidden" id="wrSubBar" style="background:#4a3520">
-  <button class="tab-btn active" id="wrTabForm" onclick="newWrDoc()">📝 새로 입력</button>
+  <button class="tab-btn active" id="wrTabForm" onclick="showWrTab('form')">📝 입력</button>
   <button class="tab-btn" id="wrTabHistory" onclick="showWrTab('history')">📋 히스토리</button>
 </div>
 
@@ -204,7 +204,10 @@ body{font-family:'Noto Sans KR','Malgun Gothic',sans-serif;background:var(--klp-
   <div class="section" style="text-align:center;border-color:var(--klp-orange)">
     <div style="font-size:15px;font-weight:800;color:var(--klp-orange);margin-bottom:8px">📎 디자인확인서 연동</div>
     <div style="font-size:12px;color:#888;margin-bottom:14px">히스토리에 저장된 디자인확인서를 불러와서 작업요청서를 만듭니다</div>
-    <button onclick="openLinkModal()" style="padding:12px 30px;border-radius:10px;border:none;background:var(--klp-orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 디자인확인서 연동하기</button>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button onclick="openLinkModal()" style="padding:12px 30px;border-radius:10px;border:none;background:var(--klp-orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">📋 디자인확인서 연동하기</button>
+      <button onclick="newWrDoc()" style="padding:12px 20px;border-radius:10px;border:2px solid #ccc;background:#fff;color:#888;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🔄 새로 입력</button>
+    </div>
     <div id="wrLinkedInfo" class="hidden" style="margin-top:12px;padding:10px 16px;background:var(--klp-orange-light);border-radius:8px;font-size:12px;color:#8B4513;font-weight:600"></div>
   </div>
 
