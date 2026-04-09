@@ -1000,7 +1000,7 @@ function renderHistory(data){
     var wrCost=0;wrs.forEach(function(w){wrCost+=(w.total_amount||0)});
     totalCost+=wrCost;
     html+='<div style="background:#fff;border:1px solid var(--klp-border);border-radius:12px;margin-bottom:14px;overflow:hidden">';
-    html+='<div style="padding:14px 18px;background:#FFF5F0;border-bottom:1px solid #f0d0b0"><div style="font-size:14px;font-weight:800;color:#E67E22">독립 작업요청서</div></div>';
+    html+='<div style="padding:14px 18px;background:#FFF5F0;border-bottom:1px solid #f0d0b0;display:flex;justify-content:space-between;align-items:center"><div style="font-size:14px;font-weight:800;color:#E67E22">독립 작업요청서</div><span style="font-size:12px;color:#E67E22;font-weight:600">원가 : '+fmtN(wrCost)+'</span></div>';
     wrs.forEach(function(w){
       var wrBadge='<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;background:#FEF0E0;color:#E67E22;margin-right:6px">작업요청서</span>';
       html+='<div style="padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="loadRecord('+w.id+')">';
